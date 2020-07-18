@@ -1,0 +1,15 @@
+## Interface: 80300
+## Author: stpain
+## Version: 0.0.1
+## Title: |cff0070DEMy Sacks|r
+## Notes: 
+## SavedVariables: MYSACKS_GLOBAL
+## SavedVariablesPerCharacter: MYSACKS_CHARACTER
+
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+Libs\LibDbIcon-1.0\LibDbIcon-1.0.lua
+
+
+MySacks_Main.lua
