@@ -437,12 +437,10 @@ function MySacks.GenerateMerchantButtonContextMenu()
     table.insert(MySacks.ContextMenu, { text = MySacks.ContextMenu_Separator, notClickable=true, notCheckable=true })
     table.insert(MySacks.ContextMenu, { text = 'Merchant options', isTitle=true, notClickable=true, notCheckable=true })
     local itemLevelThresholdSubMenu = {
-        -- { text='Item level threshold', isTitle=true, notCheckable=true },
-        -- { text=' ', isTitle=true, notCheckable=true },
-        { text='itemLevelSlider', notCheckable=true, keepShownOnClick=true, customFrame=MySacks.ContextMenu_CustomFrame_ItemLevelSlider, }, -- tooltipTitle='Item Level', tooltipText='Use mouse wheel to make small value changes', tooltipOnButton=true, },
+        { text='itemLevelSlider', notCheckable=true, keepShownOnClick=true, customFrame=MySacks.ContextMenu_CustomFrame_ItemLevelSlider, },
     }
-    table.insert(MySacks.ContextMenu, { text = 'Item Level', hasArrow=true, notCheckable=true, menuList=itemLevelThresholdSubMenu, tooltipTitle='Item level threshold', tooltipText='Items *above* this level will |cffffffffNOT|r be vendored, use mouse wheel for small changes.', tooltipOnButton=true, })
-    table.insert(MySacks.ContextMenu, { text = 'Auto vendor junk', checked=MYSACKS_CHARACTER['Merchant'].AutoVendorJunk, isNotRadio=true, keepShownOnClick=true, func=MySacks.ToggleAutoVendorJunk, tooltipTitle='Auto vendor junk', tooltipText='MySacks will auto vendor any poor rarity items, to override this hold shift when opening MySacks menu', tooltipOnButton=true, })
+    table.insert(MySacks.ContextMenu, { text = 'Item Level', hasArrow=true, notCheckable=true, menuList=itemLevelThresholdSubMenu, tooltipTitle='Item level threshold', tooltipText='Use mouse wheel for minor adjustments', tooltipOnButton=true,})
+    table.insert(MySacks.ContextMenu, { text = 'Auto vendor junk', checked=MYSACKS_CHARACTER['Merchant'].AutoVendorJunk, isNotRadio=true, keepShownOnClick=true, func=MySacks.ToggleAutoVendorJunk, })
     local ignoreRules = {
         { text = 'Item ignore rules', isTitle=true, notCheckable=true, }, -- this will be the sub menu title
     }
