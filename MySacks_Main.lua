@@ -5,10 +5,13 @@ local addonName, MySacks = ...
 MySacks.FONT_COLOUR = '|cffA330C9'
 MySacks.BAG_VENDOR_DELAY = 0.3
 MySacks.PlayerMixin = nil
-MySacks.BagsReport_Everything = {}
+MySacks.CurrentBagReport = {}
 MySacks.ContextMenu = {}
 MySacks.ContextMenu_Separator = "|TInterface/COMMON/UI-TooltipDivider:8:150|t"
-MySacks.ContextMenu_DropDown = CreateFrame("Frame", "MySacksContextMenuDropDown", UIParent, "UIDropDownMenuTemplate")
+MySacks.ContextMenu_MerchantDropDown = CreateFrame("Frame", "MySacksContextMenuMerchantDropDown", UIParent, "UIDropDownMenuTemplate")
+MySacks.ContextMenu_UIParentDropDown = CreateFrame("Frame", "MySacksContextMenuUIParentDropDown", UIParent, "UIDropDownMenuTemplate")
+MySacks.ContextMenu_UIParentDropDown:SetPoint('CENTER', 0, 0)
+MySacks.ContextMenu_UIParentDropDown:Hide()
 MySacks.ContextMenu_SoldIcon = 132050
 
 MySacks.Loaded = false
@@ -196,14 +199,13 @@ end
 ----------------------------------------------------------------------------------------------------
 SLASH_MYSACKS1 = '/mysacks'
 SlashCmdList['MYSACKS'] = function(msg)
-	if msg == '-help' then
-        print('help')
-
-	end
+    MySacks.GenerateMerchantButtonContextMenu()
+--    MySacks.ContextMenu_UIParentDropDown:Show()
+    EasyMenu(MySacks.ContextMenu, MySacks.ContextMenu_UIParentDropDown, MySacks.ContextMenu_UIParentDropDown, 0 , 0, "MENU")
 end
 
 ----------------------------------------------------------------------------------------------------
--- minimap button
+-- minimap button ****** this is no longer used as all functionality is now in the main context menu
 ----------------------------------------------------------------------------------------------------
 function MySacks.CreateMinimapButton()
     local ldb = LibStub("LibDataBroker-1.1")
@@ -230,17 +232,17 @@ function MySacks.CreateMinimapButton()
 end
 
 
-function MySacks.ContextMenu_RemoveBagsSubClassMenuButton(link)
-    if MySacks.ContextMenu_ItemSubClassMenu and next(MySacks.ContextMenu_ItemSubClassMenu) then
-        for k, button in pairs(MySacks.ContextMenu_ItemSubClassMenu) do
-            if button.arg2.Info == 'item' then
-                if tostring(button.arg2.Link) == tostring(link) then
-                    table.remove(MySacks.ContextMenu_ItemSubClassMenu, button)
-                end
-            end
-        end
-    end
-end
+-- function MySacks.ContextMenu_RemoveBagsSubClassMenuButton(link)
+--     if MySacks.ContextMenu_ItemSubClassMenuList and next(MySacks.ContextMenu_ItemSubClassMenuList) then
+--         for k, button in pairs(MySacks.ContextMenu_ItemSubClassMenuList) do
+--             if button.arg1 == 'item' then
+--                 if tostring(button.arg2.Link) == tostring(link) then
+--                     table.remove(MySacks.ContextMenu_ItemSubClassMenuList, button)
+--                 end
+--             end
+--         end
+--     end
+-- end
 
 
 
@@ -301,28 +303,27 @@ end)
 -- @function MySacks.GetBagsReport this will scan player bags and generate a table based on the contents
 -- @table MySacks.ContextMenu main menu table, contains level 1 menu buttons
 -- @table MySacks.ContextMenu_ItemClassMenu classID menu table, contains level 2 menu buttons
--- @table MySacks.ContextMenu_ItemSubClassMenu subClassID menu table, contains level 3 menu buttons
--- @table MySacks.BagsReport_Everything table containing the players bags contents as returned by MySacks.GetBagsReport
-function MySacks.GenerateMerchantButtonContextMenu()
+-- @table MySacks.ContextMenu_ItemSubClassMenuList subClassID menu table, contains level 3 menu buttons
+-- @table MySacks.CurrentBagReport table containing the players bags contents as returned by MySacks.GetBagsReport
+-- @table MySacks.CurrentBagReport structure
+-- MySacks.CurrentBagReport = {
+--     [itemClassID] = {
+--         [itemSubClassID] = {
+--             [link] = {
+                -- Rarity = number item rarity 
+                -- Count = number item count, 
+                -- SellPrice = number total value of all items with this link,
+                -- ItemClassID = number item class id,
+                -- ItemSubClassID = number item sub class id,
+                -- Link = string item link,
+--             },
+--         },
+--     }
+-- }
 
+function MySacks.GenerateMerchantButtonContextMenu()
     -- scan bags
     MySacks.GetBagsReport()
-
-    --[[
-        BagsReport_Everything table structure
-        BagsReport_Everything = {
-            [itemClassID] = {
-                [itemSubClassID] = {
-                    [link] = {
-                        Rarity = 0, number value, items rarity
-                        Count = 0, number value, count of all itmes with this link
-                        SellPrice = 0, number value, total sell price of all items with this link
-                    },
-                },
-            }
-        }
-    ]]--
-
     -- main menu
     MySacks.ContextMenu = {
         { text = 'Merchant Options', isTitle=true, notCheckable=true },
@@ -330,98 +331,19 @@ function MySacks.GenerateMerchantButtonContextMenu()
         { text = MySacks.ContextMenu_Separator, notClickable=true, notCheckable=true},
         { text = 'Items', notCheckable=true, isTitle=true, },
     }
-
-    -- bags report, class table > sub class table
-    MySacks.ContextMenu_ItemClassMenu = {}
-    MySacks.ContextMenu_ItemSubClassMenu = {}
-    if next(MySacks.BagsReport_Everything) then
-
+    MySacks.ContextMenu_ItemClassMenuList = {}
+    MySacks.ContextMenu_ItemSubClassMenuList = {}
+    if next(MySacks.CurrentBagReport) then
         -- loop the bags report table
-        for itemClassID, itemClassTable in pairs(MySacks.BagsReport_Everything) do
-            local itemClass = GetItemClassInfo(tonumber(itemClassID))
-            MySacks.ContextMenu_ItemClassMenu = {
-                { text = itemClass, isTitle=true, notCheckable=true, arg1 = -1, } --set arg1 as -1 for table.sort purposes, will keep this as first/top item
-            }
-
-            -- if the report table item has items (a table)
-            if next(itemClassTable) then
-                local total = 0 -- create item count variable
-
-                -- loop the class table
-                for itemSubClassID, itemSubClassTable in pairs(itemClassTable) do
-                    local itemSubClass = GetItemSubClassInfo(tonumber(itemClassID), tonumber(itemSubClassID))
-                    MySacks.ContextMenu_ItemSubClassMenu = {
-                        { text = itemSubClass, isTitle=true, notCheckable=true, arg1 = -2, },
-                        { text = '|cffffffffAlt|r click to vendor, |cffffffffShift|r click for tooltip, |cffffffffCtrl|r click to vendor and override rules', isTitle=true, notCheckable=true, arg1 = -1, }, --set arg1 as -1 for table.sort purposes, will keep this as first/top item
-                    }
-
-                    -- loop the items in the sub class table
-                    for link, linkTable in pairs(itemSubClassTable) do --loop the items in the sub class table(s)
-                        table.insert(MySacks.ContextMenu_ItemSubClassMenu, { 
-                            text = string.format('[%s] %s %s', linkTable.Count, link, GetCoinTextureString(tonumber(linkTable.SellPrice))),
-                            arg1 = tonumber(linkTable.Rarity), --set arg1 to item rarity, this is used to sort the table and display items in rarity order
-                            arg2 = { Info = 'item', ClassID = tonumber(itemClassID), SubClassID = tonumber(itemSubClassID), Link = link, },
-                            notCheckable=true,
-                            keepShownOnClick=true,
-                            icon = '',
-                            func = function(self, arg1, arg2)
-                                local button = self
-                                if IsControlKeyDown() then
-                                    -- ctrl overrides merchant rules
-                                    MySacks.SellItemByLink(link, linkTable.SellPrice, true)
-                                elseif IsShiftKeyDown() then
-                                    -- shift will show tooltip(s)
-                                    GameTooltip:SetOwner(self, 'ANCHOR_RIGHT', 0, -16)
-                                    GameTooltip:SetHyperlink(link)
-                                    GameTooltip:Show()
-                                elseif IsAltKeyDown() then
-                                    -- alt sells items, avoids miss sells by clicking
-                                    MySacks.SellItemByLink(link, linkTable.SellPrice, false)
-                                end
-                            end,
-                        })
-                        table.sort(MySacks.ContextMenu_ItemSubClassMenu, function(a,b) return a.arg1 < b.arg1 end) -- sort the items by rarity
-                        total = tonumber(total + linkTable.SellPrice)
-                    end
-                    table.insert(MySacks.ContextMenu_ItemClassMenu, { 
-                        text = itemSubClass, 
-                        --- use arg1 to hold sub class id and sort by this value
-                        arg1 = tonumber(itemSubClassID), 
-                        hasArrow=true, 
-                        keepShownOnClick=true,
-                        notCheckable=true,
-                        func=function(self)
-                            if IsControlKeyDown() then
-                                -- ctrl overrides merchant rules
-                                local bag = 0
-                                C_Timer.NewTicker(tonumber(MySacks.BAG_VENDOR_DELAY), function()
-                                    MySacks.SellItemBySubClass(itemClassID, itemSubClassID, true, bag)
-                                    bag = bag + 1
-                                end, 5)
-                            elseif IsAltKeyDown() then
-                                -- alt sells items, avoids miss sells by clicking
-                                local bag = 0
-                                C_Timer.NewTicker(tonumber(MySacks.BAG_VENDOR_DELAY), function()
-                                    MySacks.SellItemBySubClass(itemClassID, itemSubClassID, false, bag)
-                                    bag = bag + 1
-                                end, 5)                            end
-                        end,
-                        menuList=MySacks.ContextMenu_ItemSubClassMenu,
-                    })
-                end
-                --- sort table, this means the menu lists will always follow the same order
-                table.sort(MySacks.ContextMenu_ItemClassMenu, function(a,b) return a.arg1 < b.arg1 end)
-                table.insert(MySacks.ContextMenu_ItemClassMenu, { 
-                    text = string.format('Total %s', GetCoinTextureString(tonumber(total))),
-                    notCheckable=true 
-                })
-            end
+        for itemClassID, itemClassTable in pairs(MySacks.CurrentBagReport) do           
+            local itemClass = GetItemClassInfo(tonumber(itemClassID))            
             table.insert(MySacks.ContextMenu, { 
                 text = itemClass, 
                 hasArrow=true, 
                 keepShownOnClick=true,
                 notCheckable=true, 
-                menuList=MySacks.ContextMenu_ItemClassMenu,
+                --menuList=MySacks.ContextMenu_ItemClassMenu,
+                menuList=MySacks.GenerateItemSubClassMenu(itemClassID),
                 func=function(self)
                     if IsControlKeyDown() then
                         -- ctrl overrides merchant rules
@@ -442,6 +364,16 @@ function MySacks.GenerateMerchantButtonContextMenu()
             })
         end
     end
+
+
+
+
+
+
+
+
+
+
     table.insert(MySacks.ContextMenu, { text = MySacks.ContextMenu_Separator, notClickable=true, notCheckable=true })
     table.insert(MySacks.ContextMenu, { text = 'Merchant options', isTitle=true, notClickable=true, notCheckable=true })
     local itemLevelThresholdSubMenu = {
@@ -520,8 +452,8 @@ MySacks will scan your bags when you interact with a merchant. Your items will b
 
 |cffffffffVendoring|r
 Items can be vendored by class or sub class or directly by link.
-|cffffffffAlt|r+click will vendor the item or class/sub-class.
-|cffffffffCtrl|r+click will override any merchant rules use 
+|cffffffffAlt|r+click will vendor the item or class/sub-class of item(s).
+|cffffffffCtrl|r+click will vendor and override any merchant rules.
 |cffffffffShift|r+click will show item tooltip (only works on item links).
 
 |cffffffffRules|r
@@ -536,6 +468,118 @@ you can override this by holding |cffffffffCtrl|r when you open the MySacks menu
     
 end
 
+
+function MySacks.GenerateLinkMenu(itemClassID, itemSubClassID)
+    MySacks.GetBagsReport()
+    MySacks.ContextMenu_ItemSubClassMenuList = {}
+    if MySacks.CurrentBagReport and MySacks.CurrentBagReport[itemClassID] and MySacks.CurrentBagReport[itemClassID][itemSubClassID] then
+        local itemSubClass = GetItemSubClassInfo(tonumber(itemClassID), tonumber(itemSubClassID))
+        MySacks.ContextMenu_ItemSubClassMenuList = {}
+        for link, linkTable in pairs(MySacks.CurrentBagReport[itemClassID][itemSubClassID]) do
+            table.insert(MySacks.ContextMenu_ItemSubClassMenuList, { 
+                text = string.format('[%s] %s %s', linkTable.Count, link, GetCoinTextureString(tonumber(linkTable.SellPrice))),
+                --set arg1 to item rarity, this is used to sort the table and display items in rarity order
+                arg1 = 'item', 
+                arg2 = linkTable,
+                notCheckable=true,
+                keepShownOnClick=true,
+                icon = '',
+                func = function(self, arg1, arg2)
+                    local button = self
+                    if IsControlKeyDown() then
+                        -- ctrl overrides merchant rules
+                        MySacks.SellItemByLink(link, linkTable.SellPrice, true)
+                    elseif IsShiftKeyDown() then
+                        -- shift will show tooltip(s)
+                        GameTooltip:SetOwner(self, 'ANCHOR_RIGHT', 0, -16)
+                        GameTooltip:SetHyperlink(link)
+                        GameTooltip:Show()
+                    elseif IsAltKeyDown() then
+                        -- alt sells items, avoids miss sells by clicking
+                        MySacks.SellItemByLink(link, linkTable.SellPrice, false)
+                    end
+                end,
+            })
+        end
+        -- sort the items by rarity
+        table.sort(MySacks.ContextMenu_ItemSubClassMenuList, function(a,b) return a.arg2.Rarity < b.arg2.Rarity end)
+        -- add a separator and total at the bottom
+        table.insert(MySacks.ContextMenu_ItemSubClassMenuList, {
+            text = MySacks.ContextMenu_Separator,
+            notCheckable=true,
+            notClickable=true,
+        })
+        table.insert(MySacks.ContextMenu_ItemSubClassMenuList, {
+            text = string.format('Total %s', GetCoinTextureString(MySacks.GetItemClassSellTotal(itemClassID, itemSubClassID))),
+            notCheckable=true,
+            notClickable=true,
+        })
+        -- insert menu header
+        table.insert(MySacks.ContextMenu_ItemSubClassMenuList, 1, {
+            text = itemSubClass, 
+            isTitle=true, 
+            notCheckable=true
+        })
+    end
+    return MySacks.ContextMenu_ItemSubClassMenuList
+end
+
+
+function MySacks.GenerateItemSubClassMenu(itemClassID)
+    MySacks.GetBagsReport()
+    MySacks.ContextMenu_ItemClassMenuList = {}
+    if MySacks.CurrentBagReport and MySacks.CurrentBagReport[itemClassID] then
+        local itemClass = GetItemClassInfo(tonumber(itemClassID))
+        MySacks.ContextMenu_ItemClassMenuList = {}
+        for itemSubClassID, itemSubClassTable in pairs(MySacks.CurrentBagReport[itemClassID]) do
+            local itemSubClass = GetItemSubClassInfo(tonumber(itemClassID), tonumber(itemSubClassID))
+            table.insert(MySacks.ContextMenu_ItemClassMenuList, { 
+                text = itemSubClass, 
+                arg1 = tonumber(itemSubClassID), 
+                hasArrow=true, 
+                keepShownOnClick=true,
+                notCheckable=true,
+                func=function(self)
+                    if IsControlKeyDown() then
+                        -- ctrl overrides merchant rules
+                        local bag = 0
+                        C_Timer.NewTicker(tonumber(MySacks.BAG_VENDOR_DELAY), function()
+                            MySacks.SellItemBySubClass(itemClassID, itemSubClassID, true, bag)
+                            bag = bag + 1
+                        end, 5)
+                    elseif IsAltKeyDown() then
+                        -- alt sells items, avoids miss sells by clicking
+                        local bag = 0
+                        C_Timer.NewTicker(tonumber(MySacks.BAG_VENDOR_DELAY), function()
+                            MySacks.SellItemBySubClass(itemClassID, itemSubClassID, false, bag)
+                            bag = bag + 1
+                        end, 5)                            
+                    end
+                end,
+                menuList=MySacks.GenerateLinkMenu(itemClassID, itemSubClassID) or {},
+            })
+        end
+        table.sort(MySacks.ContextMenu_ItemClassMenuList, function(a,b) return a.arg1 < b.arg1 end)
+        -- add a separator and total at the bottom
+        table.insert(MySacks.ContextMenu_ItemClassMenuList, {
+            text = MySacks.ContextMenu_Separator,
+            notCheckable=true,
+            notClickable=true,
+        })
+        table.insert(MySacks.ContextMenu_ItemClassMenuList, {
+            text = string.format('Total %s', GetCoinTextureString(MySacks.GetItemClassSellTotal(itemClassID))),
+            notCheckable=true,
+            notClickable=true,
+        })
+        -- insert menu header
+        table.insert(MySacks.ContextMenu_ItemClassMenuList, 1, {
+            text = itemClass, 
+            isTitle=true, 
+            notCheckable=true
+        })
+    end
+    return MySacks.ContextMenu_ItemClassMenuList
+end
 
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -644,6 +688,44 @@ end
 ----------------------------------------------------------------------------------------------------
 -- functions
 ----------------------------------------------------------------------------------------------------
+
+function MySacks.GetItemSubClassSellTotal(classID, subClassID)
+    local total = 0
+    for bag = 0, 4 do
+        for slot = 0, GetContainerNumSlots(bag) do
+            local link = GetContainerItemLink(bag, slot)
+            local id = select(10, GetContainerItemInfo(bag, slot))
+            local slotCount = select(2, GetContainerItemInfo(bag, slot))
+            if link and id and slotCount then
+                --local effectiveILvl, isPreview, baseILvl = GetDetailedItemLevelInfo(link)
+                local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemIcon, itemSellPrice, itemClassID, itemSubClassID, bindType, expacID, itemSetID, isCraftingReagent = GetItemInfo(link)
+                if tonumber(itemClassID) == tonumber(classID) and tonumber(itemSubClassID) == tonumber(subClassID) then
+                    total = tonumber(total + (slotCount * itemSellPrice))
+                end
+            end
+        end
+    end
+    return total
+end
+
+function MySacks.GetItemClassSellTotal(classID)
+    local total = 0
+    for bag = 0, 4 do
+        for slot = 0, GetContainerNumSlots(bag) do
+            local link = GetContainerItemLink(bag, slot)
+            local id = select(10, GetContainerItemInfo(bag, slot))
+            local slotCount = select(2, GetContainerItemInfo(bag, slot))
+            if link and id and slotCount then
+                --local effectiveILvl, isPreview, baseILvl = GetDetailedItemLevelInfo(link)
+                local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemIcon, itemSellPrice, itemClassID, itemSubClassID, bindType, expacID, itemSetID, isCraftingReagent = GetItemInfo(link)
+                if tonumber(itemClassID) == tonumber(classID) then
+                    total = tonumber(total + (slotCount * itemSellPrice))
+                end
+            end
+        end
+    end
+    return total
+end
 
 -- this function will loop through the characters bags and update the global saved variables
 function MySacks.ScanBags()
@@ -824,7 +906,7 @@ function MySacks.DeleteCharacter(guid, name)
 end
 
 function MySacks.GetBagsReport()
-    MySacks.BagsReport_Everything = {}
+    MySacks.CurrentBagReport = {}
     for bag = 0, 4 do
         for slot = 1, GetContainerNumSlots(bag) do
             local link = GetContainerItemLink(bag, slot)
@@ -835,25 +917,28 @@ function MySacks.GetBagsReport()
                 local sellPrice = select(11, GetItemInfo(link))
                 local rarity = select(3, GetItemInfo(link))
                 if classID and subClassID and sellPrice then
-                    if not MySacks.BagsReport_Everything[tonumber(classID)] then
+                    if not MySacks.CurrentBagReport[tonumber(classID)] then
                         --print('created table for class', classID)
-                        MySacks.BagsReport_Everything[tonumber(classID)] = {}
+                        MySacks.CurrentBagReport[tonumber(classID)] = {}
                     end
-                    if not MySacks.BagsReport_Everything[tonumber(classID)][tonumber(subClassID)] then
+                    if not MySacks.CurrentBagReport[tonumber(classID)][tonumber(subClassID)] then
                         --print('created table for sub class', subClassID)
-                        MySacks.BagsReport_Everything[tonumber(classID)][tonumber(subClassID)] = {}
+                        MySacks.CurrentBagReport[tonumber(classID)][tonumber(subClassID)] = {}
                     end
-                    if not MySacks.BagsReport_Everything[tonumber(classID)][tonumber(subClassID)][link] then
+                    if not MySacks.CurrentBagReport[tonumber(classID)][tonumber(subClassID)][link] then
                         --print('added', link, 'to sub class table')
-                        MySacks.BagsReport_Everything[tonumber(classID)][tonumber(subClassID)][link] = { 
+                        MySacks.CurrentBagReport[tonumber(classID)][tonumber(subClassID)][link] = { 
                             Rarity = tonumber(rarity), 
                             Count = tonumber(slotCount), 
-                            SellPrice = (tonumber(sellPrice) * tonumber(slotCount)) 
+                            SellPrice = (tonumber(sellPrice) * tonumber(slotCount)),
+                            ItemClassID = tonumber(classID),
+                            ItemSubClassID = tonumber(subClassID),
+                            Link = link,
                         }
                     else
                         --print('updated', link, 'in sub class table')
-                        MySacks.BagsReport_Everything[tonumber(classID)][tonumber(subClassID)][link].Count = MySacks.BagsReport_Everything[tonumber(classID)][tonumber(subClassID)][link].Count + tonumber(slotCount)
-                        MySacks.BagsReport_Everything[tonumber(classID)][tonumber(subClassID)][link].SellPrice = tonumber(MySacks.BagsReport_Everything[tonumber(classID)][tonumber(subClassID)][link].SellPrice + (tonumber(sellPrice) * tonumber(slotCount)))
+                        MySacks.CurrentBagReport[tonumber(classID)][tonumber(subClassID)][link].Count = MySacks.CurrentBagReport[tonumber(classID)][tonumber(subClassID)][link].Count + tonumber(slotCount)
+                        MySacks.CurrentBagReport[tonumber(classID)][tonumber(subClassID)][link].SellPrice = tonumber(MySacks.CurrentBagReport[tonumber(classID)][tonumber(subClassID)][link].SellPrice + (tonumber(sellPrice) * tonumber(slotCount)))
                     end
                 end
             end
@@ -967,7 +1052,7 @@ function MySacks.SellItemByLink(itemLink, sellPrice, ignoreRules)
             local slotLink = GetContainerItemLink(bag, slot)
             if tostring(slotLink) == tostring(itemLink) then
                 local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemIcon, itemSellPrice, itemClassID, itemSubClassID, bindType, expacID, itemSetID, isCraftingReagent = GetItemInfo(slotLink)
-                local effectiveILvl, isPreview, baseILvl = GetDetailedItemLevelInfo(link)
+                local effectiveILvl, isPreview, baseILvl = GetDetailedItemLevelInfo(slotLink)
                 if ignoreRules == true then
                     UseContainerItem(bag, slot)
                     MySacks.Print(string.format('sold %s for %s ', itemLink, GetCoinTextureString(itemSellPrice)))
@@ -1065,7 +1150,7 @@ function MySacks.Init()
         end
         MySacks.Loaded = true
         MySacks.Print('loaded successfully!')
-        MySacks.CreateMinimapButton()
+        --MySacks.CreateMinimapButton()
         
         GameTooltip:HookScript("OnTooltipSetItem", MySacks.OnTooltipSetItem)
         GameTooltip:HookScript("OnTooltipCleared", MySacks.OnTooltipCleared)
@@ -1080,13 +1165,13 @@ function MySacks.Init()
         merchantButton:SetScript('OnClick', function(self, button)
             if button == 'RightButton' and not IsControlKeyDown() then
                 MySacks.GenerateMerchantButtonContextMenu()
-                EasyMenu(MySacks.ContextMenu, MySacks.ContextMenu_DropDown, "cursor", 0 , 0, "MENU")
+                EasyMenu(MySacks.ContextMenu, MySacks.ContextMenu_MerchantDropDown, "cursor", 0 , 0, "MENU")
                 if MYSACKS_CHARACTER['Merchant'].AutoVendorJunk == true then
                     MySacks.SellJunk()
                 end
             elseif button == 'RightButton' and IsControlKeyDown() then
                 MySacks.GenerateMerchantButtonContextMenu()
-                EasyMenu(MySacks.ContextMenu, MySacks.ContextMenu_DropDown, "cursor", 0 , 0, "MENU")
+                EasyMenu(MySacks.ContextMenu, MySacks.ContextMenu_MerchantDropDown, "cursor", 0 , 0, "MENU")
             end
         end)
 
