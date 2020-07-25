@@ -3,7 +3,7 @@
 local addonName, MySacks = ...
 
 MySacks.FONT_COLOUR = '|cffA330C9'
-MySacks.BAG_VENDOR_DELAY = 0.3
+MySacks.BAG_VENDOR_DELAY = 0.5
 MySacks.PlayerMixin = nil
 MySacks.CurrentBagReport = {}
 MySacks.ContextMenu = {}
@@ -364,16 +364,6 @@ function MySacks.GenerateMerchantButtonContextMenu()
             })
         end
     end
-
-
-
-
-
-
-
-
-
-
     table.insert(MySacks.ContextMenu, { text = MySacks.ContextMenu_Separator, notClickable=true, notCheckable=true })
     table.insert(MySacks.ContextMenu, { text = 'Merchant options', isTitle=true, notClickable=true, notCheckable=true })
     local itemLevelThresholdSubMenu = {
@@ -465,7 +455,6 @@ you can override this by holding |cffffffffCtrl|r when you open the MySacks menu
 ]]
     )
     table.insert(MySacks.ContextMenu, { text = 'Help', notCheckable=true, icon=374216, tooltipTitle='Help', tooltipText=helpTooltipText, tooltipOnButton=true,})
-    
 end
 
 
@@ -949,7 +938,7 @@ end
 
 function MySacks.SellJunk()
     local soldTotal, itemCount, bag = 0, 0, 0
-    C_Timer.NewTicker(0.2, function()
+    C_Timer.NewTicker(MySacks.BAG_VENDOR_DELAY, function()
         for slot = 1, GetContainerNumSlots(bag) do
             --local id = select(10, GetContainerItemInfo(bag, slot))
             local link = GetContainerItemLink(bag, slot)
@@ -965,8 +954,10 @@ function MySacks.SellJunk()
             end
         end
         bag = tonumber(bag + 1)
+        if bag == 5 then
+            MySacks.Print(string.format('sold %s items for %s ', itemCount, GetCoinTextureString(soldTotal)))
+        end
     end, 5)
-    MySacks.Print(string.format('sold %s items for %s ', itemCount, GetCoinTextureString(soldTotal)))
 end
 
 
@@ -1047,6 +1038,7 @@ end
 
 
 function MySacks.SellItemByLink(itemLink, sellPrice, ignoreRules)
+    local sell = true
     for bag = 0, 4 do
         for slot = 1, GetContainerNumSlots(bag) do
             local slotLink = GetContainerItemLink(bag, slot)
@@ -1057,11 +1049,23 @@ function MySacks.SellItemByLink(itemLink, sellPrice, ignoreRules)
                     UseContainerItem(bag, slot)
                     MySacks.Print(string.format('sold %s for %s ', itemLink, GetCoinTextureString(itemSellPrice)))
                 elseif ignoreRules == false then
-                    if tonumber(effectiveILvl) < tonumber(MYSACKS_CHARACTER['Merchant'].ItemlevelThreshold) then -- set as less than here as we have no sell check boolean
-                        UseContainerItem(bag, slot)
-                        MySacks.Print(string.format('sold %s for %s ', itemLink, GetCoinTextureString(itemSellPrice)))
+                    if tonumber(effectiveILvl) >= tonumber(MYSACKS_CHARACTER['Merchant'].ItemlevelThreshold) then -- set as less than here as we have no sell check boolean
+                        sell = false                        
+                    end
+                    if MYSACKS_CHARACTER['Merchant'].VendorRules[tonumber(itemRarity)] == true then
+                        sell = false
+                    end
+                    if MYSACKS_CHARACTER['Merchant'].VendorRules['boe'] == true then
+                        if tonumber(bindType) == 2 then
+                            sell = false
+                        end
                     end
                 end
+                if sell == true then
+                    UseContainerItem(bag, slot)
+                    MySacks.Print(string.format('sold %s for %s ', itemLink, GetCoinTextureString(itemSellPrice)))
+                end
+                sell = true
             end
         end
     end
