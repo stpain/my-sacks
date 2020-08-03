@@ -4,6 +4,8 @@
 
 local addonName, MySacks = ...
 
+local LOCALES = MySacks.Locales
+
 MySacks.FONT_COLOUR = '|cffA330C9'
 MySacks.BAG_VENDOR_DELAY = 0.5
 MySacks.BAG_SLOT_DELAY = 0.1
@@ -252,19 +254,6 @@ end
 -- end
 
 
-MySacks.VendoringCooldown = CreateFrame('FRAME', 'MySacksVendoringCooldown', UIParent)
-MySacks.VendoringCooldown:SetSize(50, 50)
-MySacks.VendoringCooldown:SetPoint('CENTER', 0, 0)
-MySacks.VendoringCooldown.texture = MySacks.VendoringCooldown:CreateTexture('$parentTexture', 'ARTWORK')
-MySacks.VendoringCooldown.texture:SetAllPoints(MySacks.VendoringCooldown)
-MySacks.VendoringCooldown.texture:SetTexture(133785)
-MySacks.VendoringCooldown.cooldown = CreateFrame("Cooldown", "$parentCooldown", MySacks.VendoringCooldown, "CooldownFrameTemplate")
-MySacks.VendoringCooldown.cooldown:SetFrameLevel(6)
-MySacks.VendoringCooldown.cooldown:SetAllPoints(MySacks.VendoringCooldown)
-MySacks.VendoringCooldown.cooldown:Show()
-MySacks.VendoringCooldown:Hide()
-
-
 ------------------------------------------------------------------------------------------------
 -- merchant frame context menu
 ------------------------------------------------------------------------------------------------
@@ -344,8 +333,8 @@ function MySacks.GenerateMerchantButtonContextMenu()
     MySacks.GetBagsReport()
     -- main menu
     MySacks.ContextMenu = {
-        { text = 'Merchant Options', isTitle=true, notCheckable=true },
-        { text = 'Vendor junk', notCheckable=true, keepShownOnClick=true, func = function()
+        { text = LOCALES['merchantOptions'], isTitle=true, notCheckable=true },
+        { text = LOCALES['vendorJunk'], notCheckable=true, keepShownOnClick=true, func = function()
             MySacks.VendoringCooldown:Show()
             MySacks.VendoringCooldown.cooldown:SetCooldown(GetTime(), (#MySacks.PlayerBagSlotsMap_JunkRarity * MySacks.BAG_SLOT_DELAY))
             local i = 1
@@ -362,7 +351,7 @@ function MySacks.GenerateMerchantButtonContextMenu()
             end, #MySacks.PlayerBagSlotsMap_JunkRarity)
         end},
         { text = MySacks.ContextMenu_Separator, notClickable=true, notCheckable=true},
-        { text = 'Items', notCheckable=true, isTitle=true, },
+        { text = LOCALES['items'], notCheckable=true, isTitle=true, },
     }
     MySacks.ContextMenu_ItemClassMenuList = {}
     MySacks.ContextMenu_ItemSubClassMenuList = {}
@@ -415,21 +404,32 @@ function MySacks.GenerateMerchantButtonContextMenu()
         end
     end
     table.insert(MySacks.ContextMenu, { text = MySacks.ContextMenu_Separator, notClickable=true, notCheckable=true })
-    table.insert(MySacks.ContextMenu, { text = 'Merchant options', isTitle=true, notClickable=true, notCheckable=true })
+    table.insert(MySacks.ContextMenu, { text = LOCALES['merchantOptions'], isTitle=true, notClickable=true, notCheckable=true })
     local itemLevelThresholdSubMenu = {
         { text='itemLevelSlider', notCheckable=true, keepShownOnClick=true, customFrame=MySacks.ContextMenu_CustomFrame_ItemLevelSlider, },
     }
-    table.insert(MySacks.ContextMenu, { text = 'Item Level', hasArrow=true, notCheckable=true, menuList=itemLevelThresholdSubMenu, tooltipTitle='Item level threshold', tooltipText='Use mouse wheel for minor adjustments', tooltipOnButton=true,})
-    table.insert(MySacks.ContextMenu, { text = 'Auto vendor junk', checked=MYSACKS_CHARACTER['Merchant'].AutoVendorJunk, isNotRadio=true, keepShownOnClick=true, func=MySacks.ToggleAutoVendorJunk, })
+    table.insert(MySacks.ContextMenu, { text = LOCALES['itemLevel'], hasArrow=true, notCheckable=true, menuList=itemLevelThresholdSubMenu, tooltipTitle=LOCALES['itemLevel_tooltipTitle'], tooltipText=LOCALES['itemLevel_tooltipText'], tooltipOnButton=true,})
+    table.insert(MySacks.ContextMenu, { text = LOCALES['autoVendorJunk'], checked=MYSACKS_CHARACTER['Merchant'].AutoVendorJunk, isNotRadio=true, keepShownOnClick=true, func=MySacks.ToggleAutoVendorJunk, })
     local ignoreRules = {
-        { text = 'Item ignore rules', isTitle=true, notCheckable=true, },
+        { text = LOCALES['ignoreRules'], isTitle=true, notCheckable=true, },
     }
+    table.insert(ignoreRules, {
+        text = LOCALES['boeItems'],
+        keepShownOnClick=true,
+        isNotRadio=true,
+        checked = MYSACKS_CHARACTER['Merchant'].VendorRules['boe'],
+        func = function(self)
+            MySacks.SetVendorRule('boe', nil)
+        end,
+    })
+    table.insert(ignoreRules, {text = MySacks.ContextMenu_Separator, notClickable=true, notCheckable=true })
+    table.insert(ignoreRules, {text = LOCALES['rarityTypes'], isTitle=true, notClickable=true, notCheckable=true })
     for i = 1, 6 do
         table.insert(ignoreRules, {
             keepShownOnClick=true,
             checked = function() return MYSACKS_CHARACTER['Merchant'].VendorRules['rarity'][i] end,
             arg1 = tonumber(i),
-            keepShownOnClick = true,
+            keepShownOnClick=true,
             arg2 = _G['ITEM_QUALITY'..i..'_DESC'],
             text = tostring(ITEM_QUALITY_COLORS[i].hex.._G['ITEM_QUALITY'..i..'_DESC']),
             isNotRadio=true,
@@ -439,32 +439,22 @@ function MySacks.GenerateMerchantButtonContextMenu()
         })        
     end
     table.insert(ignoreRules, {text = MySacks.ContextMenu_Separator, notClickable=true, notCheckable=true })
-    table.insert(ignoreRules, {
-        text = 'BoE items',
-        keepShownOnClick = true,
-        isNotRadio = true,
-        checked = MYSACKS_CHARACTER['Merchant'].VendorRules['boe'],
-        func = function(self)
-            MySacks.SetVendorRule('boe', nil)
-        end,
-    })
-    table.insert(ignoreRules, {text = MySacks.ContextMenu_Separator, notClickable=true, notCheckable=true })
-    -- add armor type ignore rules ? (misc, cloth, leather, mail, plate, cosmetic, shields)
+    table.insert(ignoreRules, {text = LOCALES['armorTypes'], isTitle=true, notClickable=true, notCheckable=true })
     for i = 0, 6 do
         table.insert(ignoreRules, {
             text = GetItemSubClassInfo(4, i),
             arg1 = tonumber(i),
-            keepShownOnClick = true,
-            isNotRadio = true,
+            keepShownOnClick=true,
+            isNotRadio=true,
             checked = function() return MYSACKS_CHARACTER['Merchant'].VendorRules['armor'][i] end,
             func = function(self)
                 MySacks.SetVendorRule('armor', self.arg1)
             end,
         })
     end
-    table.insert(MySacks.ContextMenu, { text = 'Ignore rules', notCheckable=true, hasArrow=true, keepShownOnClick=true, menuList=ignoreRules, tooltipTitle='Item ignore list', tooltipText='These items will |cffffffffnot|r be vendored.', tooltipOnButton=true, })
+    table.insert(MySacks.ContextMenu, { text=LOCALES['ignoreRules'], notCheckable=true, hasArrow=true, keepShownOnClick=true, menuList=ignoreRules, tooltipTitle=LOCALES['ignoreRules_tooltipTitle'], tooltipText=LOCALES['ignoreRules_tooltipText'], tooltipOnButton=true, })
     local characters = {
-        { text = 'Delete Character', isTitle=true, notCheckable=true, },
+        { text = LOCALES['selectCharacter'], isTitle=true, notCheckable=true, },
     }
     for guid, character in pairs(MYSACKS_GLOBAL.Characters) do
         if not MySacks.PlayerMixin then
@@ -493,30 +483,12 @@ function MySacks.GenerateMerchantButtonContextMenu()
         end
     end
     table.insert(MySacks.ContextMenu, { text = MySacks.ContextMenu_Separator, notCheckable=true, notClickable=true, })
-    table.insert(MySacks.ContextMenu, { text = 'Addon options', isTitle=true, notCheckable=true })
-    table.insert(MySacks.ContextMenu, { text = 'Delete Character', hasArrow=true, notCheckable=true, menuList = characters })
-    table.insert(MySacks.ContextMenu, { text = 'Wipe global data', notCheckable=true, hasArrow=true, menuList = {
-        { text = 'Confirm', notCheckable=true, func=MySacks.WipeGlobalSavedVariables } -- used as a 2 step confirmation, could add as dialog in future
+    table.insert(MySacks.ContextMenu, { text = LOCALES['addonOptions'], isTitle=true, notCheckable=true })
+    table.insert(MySacks.ContextMenu, { text = LOCALES['deleteCharacterData'], hasArrow=true, notCheckable=true, menuList = characters })
+    table.insert(MySacks.ContextMenu, { text = LOCALES['deleteGlobalData'], notCheckable=true, hasArrow=true, menuList = {
+        { text = LOCALES['confirm'], notCheckable=true, func=MySacks.WipeGlobalSavedVariables } -- used as a 2 step confirmation, could add as dialog in future
     } })
-    local helpTooltipText = tostring(
-[[
-MySacks will scan your bags when you interact with a merchant. Your items will be listed by item class (Weapons, Consumables, etc) and then sub class (Potion, Food & Drink, etc).
-
-|cffffffffVendoring|r
-Items can be vendored by class or sub class or directly by link.
-|cffffffffAlt|r+click will vendor the item or class/sub-class of item(s).
-|cffffffffCtrl|r+click will vendor and override any merchant rules.
-|cffffffffShift|r+click will show item tooltip (only works on item links).
-
-|cffffffffRules|r
-You can set up rules for vendoring,
--|cffffffffItem level threshold|r - only items with an item level lower than the threshold will be vendored.
--|cffffffffIgnore rules|r - any items with the selected rarity or that are BoE (items that become soulbound through equipping are still classed as BoE) will not be vendored.
--|cffffffffAuto sell junk|r - when you open the MySacks menu, all items with a rarity of junk (not items of the junk item class) will be vendored, 
-you can override this by holding |cffffffffCtrl|r when you open the MySacks menu.
-]]
-    )
-    table.insert(MySacks.ContextMenu, { text = 'Help', notCheckable=true, icon=374216, tooltipTitle='Help', tooltipText=helpTooltipText, tooltipOnButton=true,})
+    table.insert(MySacks.ContextMenu, { text = LOCALES['help'], notCheckable=true, icon=374216, tooltipTitle=LOCALES['help_tooltipTitle'], tooltipText=LOCALES['help_tooltipText'], tooltipOnButton=true,})
 end
 
 
@@ -598,8 +570,8 @@ function MySacks.GenerateItemSubClassMenu(itemClassID)
                 hasArrow=true, 
                 keepShownOnClick=true,
                 notCheckable=true,
-                tooltipTitle = 'Check items to ignore',
-                tooltipText = 'You can ignore specific items by checking them individually',
+                tooltipTitle = LOCALES['subClassMenu_tooltipTitle'],
+                tooltipText = LOCALES['subClassMenu_tooltipText'],
                 tooltipOnButton=true,
                 func=function(self)
                     if MySacks.PlayerBagSlotsMap_ItemSubClass[itemClassID][itemSubClassID] then
@@ -1109,7 +1081,7 @@ function MySacks.VendorItemByLocation(ignoreRules, bagID, slotID)
             end
         end
         if ignoreRules == true and sell == true then
-            UseContainerItem(bag, slot)
+            UseContainerItem(bagID, slotID)
             MySacks.Print(tostring('sold '..itemLink..' for '..GetCoinTextureString(itemSellPrice)))
         elseif ignoreRules == false then
             -- check item level
@@ -1307,6 +1279,18 @@ function MySacks.Init()
                 EasyMenu(MySacks.ContextMenu, MySacks.ContextMenu_MerchantDropDown, "cursor", 0 , 0, "MENU")
             end
         end)
+
+        MySacks.VendoringCooldown = CreateFrame('FRAME', 'MySacksVendoringCooldown', UIParent)
+        MySacks.VendoringCooldown:SetSize(50, 50)
+        MySacks.VendoringCooldown:SetPoint('CENTER', 0, 0)
+        MySacks.VendoringCooldown.texture = MySacks.VendoringCooldown:CreateTexture('$parentTexture', 'ARTWORK')
+        MySacks.VendoringCooldown.texture:SetAllPoints(MySacks.VendoringCooldown)
+        MySacks.VendoringCooldown.texture:SetTexture(133785)
+        MySacks.VendoringCooldown.cooldown = CreateFrame("Cooldown", "$parentCooldown", MySacks.VendoringCooldown, "CooldownFrameTemplate")
+        MySacks.VendoringCooldown.cooldown:SetFrameLevel(6)
+        MySacks.VendoringCooldown.cooldown:SetAllPoints(MySacks.VendoringCooldown)
+        MySacks.VendoringCooldown.cooldown:Show()
+        MySacks.VendoringCooldown:Hide()
 
     else
         MySacks.Print(MySacks.ErrorCodes['noguid'])

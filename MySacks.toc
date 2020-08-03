@@ -12,4 +12,5 @@ Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
 Libs\LibDbIcon-1.0\LibDbIcon-1.0.lua
 
 
+MySacks_Locales.lua
 MySacks_Main.lua
