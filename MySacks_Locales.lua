@@ -42,6 +42,16 @@ you can override this by holding |cffffffffCtrl|r when you open the MySacks menu
 ]])
 L['subClassMenu_tooltipTitle'] = 'Check items to ignore'
 L['subClassMenu_tooltipText'] = 'You can ignore specific items by checking them'
+L['mailMenu'] = 'Send attachments'
+L['mailMenuHelp'] = 'Help'
+L['mailMenuHelp_tooltipTitle'] = 'Mail items'
+L['mailMenuHelp_tooltipText'] = tostring(
+[[
+Add items to mail by either class, sub class or by item.
+
+|cffffffffAlt|r+click to attach the first 12 slots of your bags that contain the item(s) you've clicked.
+]]
+)
 
 local locale = GetLocale()
 
