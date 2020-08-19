@@ -1323,7 +1323,7 @@ function MySacks.GetBagsReport()
     end
 end
 
-
+--- sell item using its bag and slot address
 function MySacks.VendorItemByLocation(ignoreRules, bagID, slotID)
     local link = select(7, GetContainerItemInfo(tonumber(bagID), tonumber(slotID)))
     local sell = true
