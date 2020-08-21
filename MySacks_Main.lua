@@ -1308,8 +1308,7 @@ function MySacks.GetBagsReport()
                             Ignore = ignore,
                             Icon = tonumber(icon),
                             LocationMap = {
-                                BagID = tonumber(bag),
-                                SlotID = tonumber(slot),
+                                { BagID = tonumber(bag), SlotID = tonumber(slot), },
                             },
                         }
                     else
