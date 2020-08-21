@@ -1,6 +1,6 @@
 ## Interface: 80300
 ## Author: stpain
-## Version: 0.0.1
+## Version: 0.0.2
 ## Title: |cff0070DEMy Sacks|r
 ## Notes: 
 ## SavedVariables: MYSACKS_GLOBAL
