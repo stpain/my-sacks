@@ -6,22 +6,23 @@ local addonName, MySacks = ...
 
 local LOCALES = MySacks.Locales
 
-MySacks.FONT_COLOUR = '|cffA330C9'
-MySacks.BAG_VENDOR_DELAY = 1.0
-MySacks.BAG_SLOT_DELAY = 0.1
+local FONT_COLOUR = '|cff88C03B'
+
+
+MySacks.BAG_SLOT_DELAY = 0.2
 MySacks.PlayerMixin = nil
 MySacks.CurrentBagReport = {}
 MySacks.ContextMenu = {}
 MySacks.ContextMenu_Separator = "|TInterface/COMMON/UI-TooltipDivider:8:150|t"
+MySacks.ContextMenu_Separator_Wide = "|TInterface/COMMON/UI-TooltipDivider:8:250|t"
 MySacks.ContextMenu_MerchantDropDown = CreateFrame("Frame", "MySacksContextMenuMerchantDropDown", UIParent, "UIDropDownMenuTemplate")
-MySacks.ContextMenu_UIParentDropDown = CreateFrame("Frame", "MySacksContextMenuUIParentDropDown", UIParent, "UIDropDownMenuTemplate")
-MySacks.ContextMenu_UIParentDropDown:SetPoint('CENTER', 0, 0)
-MySacks.ContextMenu_UIParentDropDown:Hide()
 MySacks.ContextMenu_SoldIcon = 132050
 
 MySacks.PlayerBagSlotsMap_JunkRarity = {}
 MySacks.PlayerBagSlotsMap_ItemClass = {}
 MySacks.PlayerBagSlotsMap_ItemSubClass = {}
+
+MySacks.CurrentSessionLootedClassIDs = {}
 
 MySacks.Loaded = false
 
@@ -32,38 +33,6 @@ MySacks.ErrorCodes = {
     ['playermixinerror'] = 'unable to get player mixin data',
 }
 
-MySacks.Tooltip = {
-    Item = {},
-    Keys = { 
-        'Name', 
-        'Link', 
-        'Rarity', 
-        'Level', 
-        'MinLevel', 
-        'Type', 
-        'SubType', 
-        'StackCount', 
-        'EquipLocation', 
-        'Icon', 
-        'SellPrice', 
-        'ClassID', 
-        'SubClassID', 
-        'BindType',
-        'ExpansionID',
-    },
-}
-
-MySacks.ExpansionIdToName = {
-    [0] = { Short = 'WOW', Full = 'World of Warcraft' },
-    [1] = { Short = 'TBC', Full = 'The Buring Crusades' },
-    [2] = { Short = 'WOTLK', Full = 'Wrath of the Lich King' },
-    [3] = { Short = 'CATA', Full = 'Cataclysm' },
-    [4] = { Short = 'MOP', Full = 'Mist of Pandaria' },
-    [5] = { Short = 'WOD', Full = 'Warloards of Draenor' },
-    [6] = { Short = 'LEGION', Full = 'Legion' },
-    [7] = { Short = 'BFA', Full = 'Battle for Azeroth' },
-    [8] = { Short = 'SL', Full = 'Shadowlands' },
-}
 
 MySacks.ClassData = {
     [1] = { Name = 'WARRIOR', IconID = 626008, RGB={ 0.78, 0.61, 0.43 }, FontColour='|cffC79C6E', },
@@ -80,50 +49,35 @@ MySacks.ClassData = {
     [12] = { Name = 'DEMONHUNTER', IconID = 236415, RGB={ 0.64, 0.19, 0.79}, FontColour='|cffA330C9', },
 }
 
---132067 132068
---136781 136782
-MySacks.RaceInfo = {
-    [-1] = { Name = 'Unknown', Faction = 'Unknown', IconID = nil, }, -- fallback option
-    [1] = { Name = 'Human', Faction = 'Alliance', IconID = 2175463, },
-    [2] = { Name = 'Orc', Faction = 'Horde', IconID = 2175464, },
-    [3] = { Name = 'Dwarf', Faction = 'Alliance', IconID = 2175463, },
-    [4] = { Name = 'NightElf', Faction = 'Alliance', IconID = 2175463, },
-    [5] = { Name = 'Scourge', Faction = 'Horde', IconID = 2175464, },
-    [6] = { Name = 'Tauren', Faction = 'Horde', IconID = 2175464, },
-    [7] = { Name = 'Gnome', Faction = 'Alliance', IconID = 2175463, },
-    [8] = { Name = 'Troll', Faction = 'Horde', IconID = 2175464, },
-    [9] = { Name = 'Goblin', Faction = 'Horde', IconID = 2175464, },
-    [10] = { Name = 'BloodElf', Faction = 'Horde', IconID = 2175464, },
-    [11] = { Name = 'Draenei', Faction = 'Alliance', IconID = 2175463, },
-    [12] = { Name = 'FelOrc', Faction = 'Alliance', IconID = 2175463, },
-    [13] = { Name = 'Naga_', Faction = 'Alliance', IconID = 2175463, },
-    [14] = { Name = 'Broken', Faction = 'Alliance', IconID = 2175463, },
-    [15] = { Name = 'Skeleton', Faction = 'Alliance', IconID = 2175463, },
-    [16] = { Name = 'Vrykul', Faction = 'Alliance', IconID = 2175463, },
-    [17] = { Name = 'Tuskarr', Faction = 'Alliance', IconID = 2175463, },
-    [18] = { Name = 'ForestTroll', Faction = 'Alliance', IconID = 2175463, },
-    [19] = { Name = 'Taunka', Faction = 'Alliance', IconID = 2175463, },
-    [20] = { Name = 'NorthrendSkeleton', Faction = 'Alliance', IconID = 2175463, },
-    [21] = { Name = 'IceTroll', Faction = 'Alliance', IconID = 2175463, },
-    [22] = { Name = 'Worgen', Faction = 'Alliance', IconID = 2175463, },
-    [23] = { Name = 'Human', Faction = 'Alliance', IconID = 2175463, },
-    [24] = { Name = 'Pandaren', Faction = 'Neutral', IconID = 2175463, },
-    [25] = { Name = 'Pandaren', Faction = 'Alliance', IconID = 2175463, },
-    [26] = { Name = 'Pandaren', Faction = 'Horde', IconID = 2175464, },
-    [27] = { Name = 'Nightborne', Faction = 'Horde', IconID = 2175464, },
-    [28] = { Name = 'HighmountainTauren', Faction = 'Horde', IconID = 2175464, },
-    [29] = { Name = 'VoidElf', Faction = 'Alliance', IconID = 2175463, },
-    [30] = { Name = 'LightforgedDraenei', Faction = 'Alliance', IconID = 2175463, },
-    [31] = { Name = 'ZandalariTroll', Faction = 'Horde', IconID = 2175464, },
-    [32] = { Name = 'KulTiran', Faction = 'Alliance', IconID = 2175463, },
-    [33] = { Name = 'ThinHuman', Faction = 'Alliance', IconID = 2175463, },
-    [34] = { Name = 'DarkIronDwarf', Faction = 'Alliance', IconID = 2175463, },
-    [35] = { Name = 'Vulpera', Faction = 'Alliance', IconID = 2175463, },
-    [36] = { Name = 'MagharOrc', Faction = 'Horde', IconID = 2175464, },
-    [37] = { Name = 'Mechagnome', Faction = 'Alliance', IconID = 2175463, },
-}
 
 --Item binding type: 0 - none; 1 - on pickup; 2 - on equip; 3 - on use; 4 - quest.
+
+----------------------------------------------------------------------------------------------------
+-- minimap button ****** this is no longer used as all functionality is now in the main context menu
+----------------------------------------------------------------------------------------------------
+function MySacks.CreateMinimapButton()
+    local ldb = LibStub("LibDataBroker-1.1")
+    MySacks.MinimapButtonObject = ldb:NewDataObject(addonName, {
+        type = "data source",
+        icon = 1392955,
+        OnClick = function(self, button)
+            if button == "LeftButton" then
+                -- Standard workaround call OpenToCategory twice
+                -- https://www.wowinterface.com/forums/showpost.php?p=319664&postcount=2
+                -- InterfaceOptionsFrame_OpenToCategory(addonName)
+                -- InterfaceOptionsFrame_OpenToCategory(addonName)
+            end
+        end,
+        OnTooltipShow = function(tooltip)
+            if not tooltip or not tooltip.AddLine then return end
+            tooltip:AddLine(MySacks.FONT_COLOUR..addonName)
+            tooltip:AddLine("|cffFFFFFFLeft click:|r Options")
+        end,
+    })
+    MySacks.MinimapIcon = LibStub("LibDBIcon-1.0")
+    if not MYSACKS_CHARACTER['MinimapButton'] then MYSACKS_CHARACTER['MinimapButton'] = {} end
+    MySacks.MinimapIcon:Register(addonName, MySacks.MinimapButtonObject, MYSACKS_CHARACTER['MinimapButton'])
+end
 
 ----------------------------------------------------------------------------------------------------
 -- helper functions
@@ -180,12 +134,12 @@ function MySacks.RgbToPercent(t)
     end
 end
 
---- returns an item id using an item link
--- @param link the item link to extract an id from
+--- returns an item id from an item link
+-- @param s the item link to extract an id from
 -- @return id the item id 
-function MySacks.GetItemIdFromLink(link)
-    if string.find(link, '|Hitem') then
-        local l = string.sub(tostring(link), (string.find(link, '|Hitem')), (string.find(link, '|h')))
+function MySacks.GetItemIdFromString(s)
+    if string.find(s, '|Hitem') then
+        local l = string.sub(tostring(s), (string.find(s, '|Hitem')), (string.find(s, '|h')))
         local t, i = {}, 1
         for d in string.gmatch(l, '[^:]+') do
             t[i] = d
@@ -202,54 +156,28 @@ function MySacks.GetItemIdFromLink(link)
     end
 end
 
+--- returns empty mail slots on the current open mail 
+-- @return number the number of empty slots
+function MySacks.GetSendMailEmptySlots()
+    local s = 0
+    for i = 1, ATTACHMENTS_MAX_SEND do
+        local name, itemID, texture, count, quality = GetSendMailItem(i)
+        if name then
+            s = s + 1
+        end
+    end
+    return ATTACHMENTS_MAX_SEND - s
+end
+
 ----------------------------------------------------------------------------------------------------
 -- slash commands
 ----------------------------------------------------------------------------------------------------
 SLASH_MYSACKS1 = '/mysacks'
 SlashCmdList['MYSACKS'] = function(msg)
-    MySacks.GenerateMerchantButtonContextMenu()
-    EasyMenu(MySacks.ContextMenu, MySacks.ContextMenu_UIParentDropDown, MySacks.ContextMenu_UIParentDropDown, 0 , 0, "MENU")
-end
-
-----------------------------------------------------------------------------------------------------
--- minimap button ****** this is no longer used as all functionality is now in the main context menu
-----------------------------------------------------------------------------------------------------
-function MySacks.CreateMinimapButton()
-    local ldb = LibStub("LibDataBroker-1.1")
-    MySacks.MinimapButtonObject = ldb:NewDataObject(addonName, {
-        type = "data source",
-        icon = 1392955,
-        OnClick = function(self, button)
-            if button == "LeftButton" then
-                -- Standard workaround call OpenToCategory twice
-                -- https://www.wowinterface.com/forums/showpost.php?p=319664&postcount=2
-                -- InterfaceOptionsFrame_OpenToCategory(addonName)
-                -- InterfaceOptionsFrame_OpenToCategory(addonName)
-            end
-        end,
-        OnTooltipShow = function(tooltip)
-            if not tooltip or not tooltip.AddLine then return end
-            tooltip:AddLine(MySacks.FONT_COLOUR..addonName)
-            tooltip:AddLine("|cffFFFFFFLeft click:|r Options")
-        end,
-    })
-    MySacks.MinimapIcon = LibStub("LibDBIcon-1.0")
-    if not MYSACKS_CHARACTER['MinimapButton'] then MYSACKS_CHARACTER['MinimapButton'] = {} end
-    MySacks.MinimapIcon:Register(addonName, MySacks.MinimapButtonObject, MYSACKS_CHARACTER['MinimapButton'])
+    MySacks.ReportFrame:Show()
 end
 
 
--- function MySacks.ContextMenu_RemoveBagsSubClassMenuButton(link)
---     if MySacks.ContextMenu_ItemSubClassMenuList and next(MySacks.ContextMenu_ItemSubClassMenuList) then
---         for k, button in pairs(MySacks.ContextMenu_ItemSubClassMenuList) do
---             if button.arg1 == 'item' then
---                 if tostring(button.arg2.Link) == tostring(link) then
---                     table.remove(MySacks.ContextMenu_ItemSubClassMenuList, button)
---                 end
---             end
---         end
---     end
--- end
 
 
 
@@ -285,20 +213,8 @@ function MySacks.OnTooltipSetItem(tooltip, ...)
                 --print(id, 'using item name')
             end
             if not id then
-                id = tonumber(MySacks.GetItemIdFromLink(link))
+                id = tonumber(MySacks.GetItemIdFromString(link))
                 --print(id, 'using link')
-            end
-            if link then
-                for i = 1, 15 do
-                    MySacks.Tooltip.Item[MySacks.Tooltip.Keys[i]] = select(i, GetItemInfo(link))
-                    local d = select(i, GetItemInfo(link))
-                    --print(MySacks.Tooltip.Keys[i], d)
-                end
-                local effectiveILvl, isPreview, baseILvl = GetDetailedItemLevelInfo(link)
-                MySacks.Tooltip.Item['EffectiveLevel'] = tonumber(effectiveILvl)
-            else
-                --MySacks.Print(MySacks.ErrorCodes['tooltipitemerror'])
-                return
             end
             local itemCount = 0
             if next(MYSACKS_GLOBAL.Characters) then
@@ -315,53 +231,19 @@ function MySacks.OnTooltipSetItem(tooltip, ...)
                         if classID then
                             fs = MySacks.ClassData[tonumber(classID)].FontColour
                         end
-                        local bags, bank, reagents = 0, 0, 0
+                        local bags, bank = 0, 0
                         if next(character.Bags) and character.Bags[id] then
                             bags = tonumber(character.Bags[id].Count)
                         end
                         if next(character.Bank) and character.Bank[id] then
                             bank = tonumber(character.Bank[id].Count)
-                        end
-                        if next(character.Reagents) and character.Reagents[id] then
-                            reagents = tonumber(character.Reagents[id].Count)
-                        end                    
-                        itemCount = bags + bank + reagents
+                        end                  
+                        itemCount = bags + bank
                         if tonumber(itemCount) > 0 then
-                            tooltip:AddDoubleLine(tostring(fs..name), tostring(fs..'Bags: |cffffffff'..bags..fs..' Bank: |cffffffff'..bank..fs..' Reagents: |cffffffff'..reagents..fs..' Total: |cffffffff'..itemCount))
+                            tooltip:AddDoubleLine(tostring(fs..name), tostring(fs..'Bags: |cffffffff'..bags..fs..' Bank: |cffffffff'..bank..fs..' Total: |cffffffff'..itemCount))
                             --tooltip:AddTexture() --?
                         end
                     end
-                end
-            end
-            -- using a 1==1 check until adding options available to user to choose what is shown
-            if 1 == 1 then
-                if MySacks.Tooltip.Item['ClassID'] and MySacks.Tooltip.Item['SubClassID'] then
-                    tooltip:AddDoubleLine(GetItemClassInfo(tonumber(MySacks.Tooltip.Item['ClassID'])), GetItemSubClassInfo(tonumber(MySacks.Tooltip.Item['ClassID']), tonumber(MySacks.Tooltip.Item['SubClassID'])), 1, 1, 1, 1, 1, 1)
-                end
-            end
-            if 1 == 1 then
-                if MySacks.Tooltip.Item['ExpansionID'] then
-                    tooltip:AddLine(MySacks.ExpansionIdToName[tonumber(MySacks.Tooltip.Item['ExpansionID'])].Full, 1, 1, 1)
-                end
-            end
-            if 1 == 1 then
-                if MySacks.Tooltip.Item['MinLevel'] then
-                    tooltip:AddDoubleLine('Min Level', tostring(MySacks.Tooltip.Item['MinLevel']), 1, 1, 1, 1, 1, 1)
-                end
-            end
-            if 1 == 1 then
-                if MySacks.Tooltip.Item['Level'] then
-                    tooltip:AddDoubleLine('Level', tostring(MySacks.Tooltip.Item['Level']), 1, 1, 1, 1, 1, 1)
-                end
-            end
-            if 1 == 1 then
-                if MySacks.Tooltip.Item['EffectiveLevel']  then
-                    tooltip:AddDoubleLine('Effective Level', tostring(MySacks.Tooltip.Item['EffectiveLevel']), 1, 1, 1, 1, 1, 1)
-                end
-            end
-            if 1 == 1 then
-                if MySacks.Tooltip.Item['Icon'] then
-                    tooltip:AddDoubleLine('Icon ID', MySacks.Tooltip.Item['Icon'], 1, 1, 1, 1, 1, 1)
                 end
             end
         end
@@ -395,7 +277,7 @@ MySacks.ContextMenu_CustomFrame_ItemLevelSlider.slider:SetPoint('LEFT', 10, 0)
 MySacks.ContextMenu_CustomFrame_ItemLevelSlider.slider:SetThumbTexture("Interface/Buttons/UI-SliderBar-Button-Horizontal")
 MySacks.ContextMenu_CustomFrame_ItemLevelSlider.slider:SetSize(100, 16)
 MySacks.ContextMenu_CustomFrame_ItemLevelSlider.slider:SetOrientation('HORIZONTAL')
-MySacks.ContextMenu_CustomFrame_ItemLevelSlider.slider:SetMinMaxValues(1, 500) -- this is determined by max item level in game
+MySacks.ContextMenu_CustomFrame_ItemLevelSlider.slider:SetMinMaxValues(1, 300) -- this is determined by max item level in game
 MySacks.ContextMenu_CustomFrame_ItemLevelSlider.slider:SetValueStep(1)
 --- set texts to nil ('') makes them appear hidden
 _G[MySacks.ContextMenu_CustomFrame_ItemLevelSlider.slider:GetName()..'Low']:SetText('')
@@ -436,19 +318,12 @@ end)
 
 
 
-function MySacks.GetSendMailEmptySlots()
-    local s = 0
-    for i = 1, ATTACHMENTS_MAX_SEND do
-        local name, itemID, texture, count, quality = GetSendMailItem(i)
-        if name then
-            s = s + 1
-        end
-    end
-    return ATTACHMENTS_MAX_SEND - s
-end
 
 
 
+------------------------------------------------------------------------------------------------
+-- mail attachments menu
+------------------------------------------------------------------------------------------------
 function MySacks.GenerateMailButtonContextMenu()
     MySacks.GetBagsReport()
     MySacks.ContextMenu = {
@@ -477,10 +352,8 @@ function MySacks.GenerateMailButtonContextMenu()
                                         UseContainerItem(location.BagID, location.SlotID)
                                         i = i + 1
                                         slotsEmpty = MySacks.GetSendMailEmptySlots()
+                                        --print(string.format('added %s from bag %s slot %s to mail, slots left in mail %s', itemClass, location.BagID, location.SlotID, slotsEmpty))
                                     end
-                                    -- if i > #MySacks.PlayerBagSlotsMap_ItemSubClass[itemClassID] then
-                                    --     break
-                                    -- end
                                 else
                                     break
                                 end
@@ -491,7 +364,14 @@ function MySacks.GenerateMailButtonContextMenu()
             })
         end
     end
-    table.insert(MySacks.ContextMenu, {text = LOCALES['mailMenuHelp'], notCheckable=true, icon=374216, tooltipTitle=LOCALES['mailMenuHelp_tooltipTitle'], tooltipText=LOCALES['mailMenuHelp_tooltipText'], tooltipOnButton=true } )
+    table.insert(MySacks.ContextMenu, {
+        text = LOCALES['mailMenuHelp'], 
+        notCheckable=true, 
+        icon=374216, 
+        tooltipTitle=LOCALES['mailMenuHelp_tooltipTitle'], 
+        tooltipText=LOCALES['mailMenuHelp_tooltipText'], 
+        tooltipOnButton=true 
+    } )
 end
 
 
@@ -548,8 +428,16 @@ function MySacks.GenerateMerchantButtonContextMenu()
                 end
             end, #MySacks.PlayerBagSlotsMap_JunkRarity)
         end},
-        { text = MySacks.ContextMenu_Separator, notClickable=true, notCheckable=true},
-        { text = LOCALES['items'], notCheckable=true, isTitle=true, },
+        { 
+            text = MySacks.ContextMenu_Separator, 
+            notClickable=true, 
+            notCheckable=true
+        },
+        { 
+            text = LOCALES['items'], 
+            notCheckable=true, 
+            isTitle=true, 
+        },
     }
     MySacks.ContextMenu_ItemClassMenuList = {}
     MySacks.ContextMenu_ItemSubClassMenuList = {}
@@ -601,15 +489,46 @@ function MySacks.GenerateMerchantButtonContextMenu()
             })
         end
     end
-    table.insert(MySacks.ContextMenu, { text = MySacks.ContextMenu_Separator, notClickable=true, notCheckable=true })
-    table.insert(MySacks.ContextMenu, { text = LOCALES['merchantOptions'], isTitle=true, notClickable=true, notCheckable=true })
+    table.insert(MySacks.ContextMenu, { 
+        text = MySacks.ContextMenu_Separator, 
+        notClickable=true, 
+        notCheckable=true 
+    })
+    table.insert(MySacks.ContextMenu, { 
+        text = LOCALES['merchantOptions'], 
+        isTitle=true, notClickable=true, 
+        notCheckable=true 
+    })
     local itemLevelThresholdSubMenu = {
-        { text='itemLevelSlider', notCheckable=true, keepShownOnClick=true, customFrame=MySacks.ContextMenu_CustomFrame_ItemLevelSlider, },
+        { 
+            text='itemLevelSlider', 
+            notCheckable=true, 
+            keepShownOnClick=true, 
+            customFrame=MySacks.ContextMenu_CustomFrame_ItemLevelSlider, 
+        },
     }
-    table.insert(MySacks.ContextMenu, { text = LOCALES['itemLevel'], hasArrow=true, notCheckable=true, menuList=itemLevelThresholdSubMenu, tooltipTitle=LOCALES['itemLevel_tooltipTitle'], tooltipText=LOCALES['itemLevel_tooltipText'], tooltipOnButton=true,})
-    table.insert(MySacks.ContextMenu, { text = LOCALES['autoVendorJunk'], checked=MYSACKS_CHARACTER['Merchant'].AutoVendorJunk, isNotRadio=true, keepShownOnClick=true, func=MySacks.ToggleAutoVendorJunk, })
+    table.insert(MySacks.ContextMenu, { 
+        text = LOCALES['itemLevel'], 
+        hasArrow=true, 
+        notCheckable=true, 
+        menuList=itemLevelThresholdSubMenu, 
+        tooltipTitle=LOCALES['itemLevel_tooltipTitle'], 
+        tooltipText=LOCALES['itemLevel_tooltipText'], 
+        tooltipOnButton=true,
+    })
+    table.insert(MySacks.ContextMenu, { 
+        text = LOCALES['autoVendorJunk'], 
+        checked=MYSACKS_CHARACTER['Merchant'].AutoVendorJunk, 
+        isNotRadio=true, 
+        keepShownOnClick=true, 
+        func=MySacks.ToggleAutoVendorJunk, 
+    })
     local ignoreRules = {
-        { text = LOCALES['ignoreRules'], isTitle=true, notCheckable=true, },
+        { 
+            text = LOCALES['ignoreRules'], 
+            isTitle=true, 
+            notCheckable=true, 
+        },
     }
     table.insert(ignoreRules, {
         text = LOCALES['boeItems'],
@@ -620,8 +539,17 @@ function MySacks.GenerateMerchantButtonContextMenu()
             MySacks.SetVendorRule('boe', nil)
         end,
     })
-    table.insert(ignoreRules, {text = MySacks.ContextMenu_Separator, notClickable=true, notCheckable=true })
-    table.insert(ignoreRules, {text = LOCALES['rarityTypes'], isTitle=true, notClickable=true, notCheckable=true })
+    table.insert(ignoreRules, {
+        text = MySacks.ContextMenu_Separator, 
+        notClickable=true, 
+        notCheckable=true 
+    })
+    table.insert(ignoreRules, {
+        text = LOCALES['rarityTypes'], 
+        isTitle=true, 
+        notClickable=true, 
+        notCheckable=true 
+    })
     for i = 1, 6 do
         table.insert(ignoreRules, {
             keepShownOnClick=true,
@@ -636,8 +564,17 @@ function MySacks.GenerateMerchantButtonContextMenu()
             end,
         })        
     end
-    table.insert(ignoreRules, {text = MySacks.ContextMenu_Separator, notClickable=true, notCheckable=true })
-    table.insert(ignoreRules, {text = LOCALES['armorTypes'], isTitle=true, notClickable=true, notCheckable=true })
+    table.insert(ignoreRules, {
+        text = MySacks.ContextMenu_Separator, 
+        notClickable=true, 
+        notCheckable=true 
+    })
+    table.insert(ignoreRules, {
+        text = LOCALES['armorTypes'], 
+        isTitle=true, 
+        notClickable=true, 
+        notCheckable=true 
+    })
     for i = 0, 6 do
         table.insert(ignoreRules, {
             text = GetItemSubClassInfo(4, i),
@@ -650,9 +587,22 @@ function MySacks.GenerateMerchantButtonContextMenu()
             end,
         })
     end
-    table.insert(MySacks.ContextMenu, { text=LOCALES['ignoreRules'], notCheckable=true, hasArrow=true, keepShownOnClick=true, menuList=ignoreRules, tooltipTitle=LOCALES['ignoreRules_tooltipTitle'], tooltipText=LOCALES['ignoreRules_tooltipText'], tooltipOnButton=true, })
+    table.insert(MySacks.ContextMenu, { 
+        text=LOCALES['ignoreRules'], 
+        notCheckable=true, 
+        hasArrow=true, 
+        keepShownOnClick=true, 
+        menuList=ignoreRules, 
+        tooltipTitle=LOCALES['ignoreRules_tooltipTitle'], 
+        tooltipText=LOCALES['ignoreRules_tooltipText'], 
+        tooltipOnButton=true, 
+    })
     local characters = {
-        { text = LOCALES['selectCharacter'], isTitle=true, notCheckable=true, },
+        { 
+            text = LOCALES['selectCharacter'], 
+            isTitle=true, 
+            notCheckable=true, 
+        },
     }
     for guid, character in pairs(MYSACKS_GLOBAL.Characters) do
         if not MySacks.PlayerMixin then
@@ -670,7 +620,7 @@ function MySacks.GenerateMerchantButtonContextMenu()
                 end
                 table.insert(characters, {
                     text = name,
-                    icon = MySacks.RaceInfo[tonumber(raceID)].IconID,
+                    icon = nil,
                     notCheckable=true, 
                     func = function() 
                         MySacks.DeleteCharacter(guid, name) 
@@ -680,13 +630,48 @@ function MySacks.GenerateMerchantButtonContextMenu()
             end
         end
     end
-    table.insert(MySacks.ContextMenu, { text = MySacks.ContextMenu_Separator, notCheckable=true, notClickable=true, })
-    table.insert(MySacks.ContextMenu, { text = LOCALES['addonOptions'], isTitle=true, notCheckable=true })
-    table.insert(MySacks.ContextMenu, { text = LOCALES['deleteCharacterData'], hasArrow=true, notCheckable=true, menuList = characters })
-    table.insert(MySacks.ContextMenu, { text = LOCALES['deleteGlobalData'], notCheckable=true, hasArrow=true, menuList = {
-        { text = LOCALES['confirm'], notCheckable=true, func=MySacks.WipeGlobalSavedVariables } -- used as a 2 step confirmation, could add as dialog in future
-    } })
-    table.insert(MySacks.ContextMenu, { text = LOCALES['help'], notCheckable=true, icon=374216, tooltipTitle=LOCALES['help_tooltipTitle'], tooltipText=LOCALES['help_tooltipText'], tooltipOnButton=true,})
+    table.insert(MySacks.ContextMenu, { 
+        text = MySacks.ContextMenu_Separator, 
+        notCheckable=true, 
+        notClickable=true, 
+    })
+    table.insert(MySacks.ContextMenu, { 
+        text = LOCALES['addonOptions'], 
+        isTitle=true, 
+        notCheckable=true 
+    })
+    table.insert(MySacks.ContextMenu, { 
+        text = LOCALES['deleteCharacterData'], 
+        hasArrow=true, 
+        notCheckable=true, 
+        menuList = 
+        characters 
+    })
+    table.insert(MySacks.ContextMenu, { 
+        text = LOCALES['deleteGlobalData'], 
+        notCheckable=true, 
+        hasArrow=true, 
+        menuList = {
+            { 
+                text = LOCALES['confirm'], 
+                notCheckable=true, 
+                func=MySacks.WipeGlobalSavedVariables 
+            }
+        } 
+    })
+    table.insert(MySacks.ContextMenu, { 
+        text = LOCALES['help'], 
+        notCheckable=true, 
+        icon=374216, 
+        tooltipTitle=LOCALES['help_tooltipTitle'], 
+        tooltipText=LOCALES['help_tooltipText'], 
+        tooltipOnButton=true,
+    })
+    table.insert(MySacks.ContextMenu, { 
+        text = LOCALES['cancel'], 
+        notCheckable=true, 
+        func=function() CloseDropDownMenus() end 
+    })
 end
 
 
@@ -718,19 +703,10 @@ function MySacks.GenerateLinkMenu_Mail(itemClassID, itemSubClassID)
                 arg1 = 'item', 
                 arg2 = linkTable,
                 isNotRadio=true,
-                notCheckable=true,
-                --checked = function() return linkTable.Ignore end,
+                --notCheckable=true,
                 keepShownOnClick=true,
                 icon = linkTable.Icon,
                 func = function(self, arg1, arg2)
-                    -- update the report table ignore status  <<<<<<---- CREATE A MAIL IGNORE SETTINGS TABLE AT SOME POINT IF USEFUL
-                    --linkTable.Ignore = not linkTable.Ignore
-                    -- update saved var table, this ensures item ignore status persists through logout
-                    -- if linkTable.Ignore == false then
-                    --     MYSACKS_CHARACTER.Merchant.IgnoreList[link] = nil
-                    -- else
-                    --     MYSACKS_CHARACTER.Merchant.IgnoreList[link] = true
-                    -- end
                     if IsShiftKeyDown() then
                         -- shift will show tooltip(s)
                         GameTooltip:SetOwner(self, 'ANCHOR_RIGHT', 0, -16)
@@ -751,24 +727,12 @@ function MySacks.GenerateLinkMenu_Mail(itemClassID, itemSubClassID)
                                 end
                             end
                         end
+                        self.checked = true -- not self.cheked
                     end
                 end,
             })
         end
-        -- sort the items by rarity
         table.sort(MySacks.ContextMenu_ItemSubClassMenuList, function(a,b) return a.arg2.Rarity < b.arg2.Rarity end)
-        -- add a separator and total at the bottom
-        -- table.insert(MySacks.ContextMenu_ItemSubClassMenuList, {
-        --     text = MySacks.ContextMenu_Separator,
-        --     notCheckable=true,
-        --     notClickable=true,
-        -- })
-        -- table.insert(MySacks.ContextMenu_ItemSubClassMenuList, {
-        --     text = string.format('Total %s', GetCoinTextureString(MySacks.GetItemSubClassSellTotal(itemClassID, itemSubClassID))),
-        --     notCheckable=true,
-        --     notClickable=true,
-        -- })
-        -- insert menu header
         table.insert(MySacks.ContextMenu_ItemSubClassMenuList, 1, {
             text = itemSubClass, 
             isTitle=true, 
@@ -778,8 +742,7 @@ function MySacks.GenerateLinkMenu_Mail(itemClassID, itemSubClassID)
     return MySacks.ContextMenu_ItemSubClassMenuList
 end
 
---- generate the menuList for item classes, this is a list of sub classes of the item class
--- @param itemClassID number value of item class
+
 function MySacks.GenerateItemSubClassMenu_Mail(itemClassID)
     MySacks.GetBagsReport()
     MySacks.ContextMenu_ItemClassMenuList = {}
@@ -811,10 +774,8 @@ function MySacks.GenerateItemSubClassMenu_Mail(itemClassID)
                                             UseContainerItem(location.BagID, location.SlotID)
                                             i = i + 1
                                             slotsEmpty = MySacks.GetSendMailEmptySlots()
+                                            --print(string.format('added %s from bag %s slot %s to mail, slots left in mail %s', itemSubClass, location.BagID, location.SlotID, slotsEmpty))
                                         end
-                                        -- if i > #MySacks.PlayerBagSlotsMap_ItemSubClass[itemClassID][itemSubClassID] then
-                                        --     break
-                                        -- end
                                     else
                                         break
                                     end
@@ -827,18 +788,6 @@ function MySacks.GenerateItemSubClassMenu_Mail(itemClassID)
             })
         end
         table.sort(MySacks.ContextMenu_ItemClassMenuList, function(a,b) return a.arg1 < b.arg1 end)
-        -- add a separator and total at the bottom
-        -- table.insert(MySacks.ContextMenu_ItemClassMenuList, {
-        --     text = MySacks.ContextMenu_Separator,
-        --     notCheckable=true,
-        --     notClickable=true,
-        -- })
-        -- table.insert(MySacks.ContextMenu_ItemClassMenuList, {
-        --     text = string.format('Total %s', GetCoinTextureString(MySacks.GetItemClassSellTotal(itemClassID))),
-        --     notCheckable=true,
-        --     notClickable=true,
-        -- })
-        -- insert menu header
         table.insert(MySacks.ContextMenu_ItemClassMenuList, 1, {
             text = itemClass, 
             isTitle=true, 
@@ -860,44 +809,55 @@ function MySacks.GenerateLinkMenu(itemClassID, itemSubClassID)
         local itemSubClass = GetItemSubClassInfo(tonumber(itemClassID), tonumber(itemSubClassID))
         MySacks.ContextMenu_ItemSubClassMenuList = {}
         for link, linkTable in pairs(MySacks.CurrentBagReport[itemClassID][itemSubClassID]) do
+            --print(link, linkTable.Count, linkTable.VendorPrice, linkTable.Count * linkTable.VendorPrice)
             table.insert(MySacks.ContextMenu_ItemSubClassMenuList, { 
-                text = string.format('[%s] %s %s', linkTable.Count, link, GetCoinTextureString(tonumber(linkTable.SellPrice))),
-                arg1 = 'item', 
+                text = string.format('[%s] %s %s', linkTable.Count, link, GetCoinTextureString(tonumber(linkTable.Count * linkTable.VendorPrice))),
+                arg1 = (linkTable.Count * linkTable.VendorPrice), 
                 arg2 = linkTable,
                 isNotRadio=true,
                 checked = function() return linkTable.Ignore end,
+                --checked = function() return MYSACKS_CHARACTER.Merchant.IgnoreList[linkTable.ItemID] end,
                 keepShownOnClick=true,
                 icon = '',
                 func = function(self, arg1, arg2)
-                    -- update the report table ignore status
-                    linkTable.Ignore = not linkTable.Ignore
-                    -- update saved var table, this ensures item ignore status persists through logout
-                    if linkTable.Ignore == false then
-                        MYSACKS_CHARACTER.Merchant.IgnoreList[link] = nil
-                    else
-                        MYSACKS_CHARACTER.Merchant.IgnoreList[link] = true
-                    end
-                    --local button = self
-                    if IsControlKeyDown() then
-                        -- ctrl overrides merchant rules
-                        MySacks.SellItemByLink(link, linkTable.SellPrice, true)
-                    elseif IsShiftKeyDown() then
-                        -- shift will show tooltip(s)
+                    -- ctrl overrides merchant rules
+                    if IsControlKeyDown() and not IsShiftKeyDown() and not IsAltKeyDown() then
+                        MySacks.SellItemByLink(link, linkTable.VendorPrice, true)
+                    -- shift will show tooltip(s)
+                    elseif IsShiftKeyDown() and not IsControlKeyDown() and not IsAltKeyDown() then
                         GameTooltip:SetOwner(self, 'ANCHOR_RIGHT', 0, -16)
                         GameTooltip:SetHyperlink(link)
                         GameTooltip:Show()
-                    elseif IsAltKeyDown() then
-                        -- alt sells items, avoids miss sells by clicking
-                        MySacks.SellItemByLink(link, linkTable.SellPrice, false)
+                    -- alt sells items, avoids miss sells by clicking
+                    elseif IsAltKeyDown() and not IsShiftKeyDown() and not IsControlKeyDown() then    
+                        --print('selling item by link', link)
+                        MySacks.SellItemByLink(link, linkTable.VendorPrice, false)
+                    else
+                        linkTable.Ignore = not linkTable.Ignore
+                        if linkTable.Ignore == false then
+                            MYSACKS_CHARACTER.Merchant.IgnoreList[linkTable.ItemID] = nil
+                            --print(string.format('saved var table ignore list: item %s is now set to nil', link))
+                        else
+                            MYSACKS_CHARACTER.Merchant.IgnoreList[linkTable.ItemID] = true
+                            --print(string.format('saved var table ignore list: item %s is now set to ignore: %s', link, tostring(linkTable.Ignore)))
+                        end
+                    end
+                    -- update the checked icon
+                    if linkTable.Ignore == true then
+                        _G[self:GetName()..'Check']:Show()
+                        _G[self:GetName()..'UnCheck']:Hide()
+                    else
+                        _G[self:GetName()..'Check']:Hide()
+                        _G[self:GetName()..'UnCheck']:Show()
                     end
                 end,
             })
         end
-        -- sort the items by rarity
-        table.sort(MySacks.ContextMenu_ItemSubClassMenuList, function(a,b) return a.arg2.Rarity < b.arg2.Rarity end)
+        -- sort menu by item value (all stack counts * vendorPrice)
+        table.sort(MySacks.ContextMenu_ItemSubClassMenuList, function(a,b) return a.arg1 < b.arg1 end)
         -- add a separator and total at the bottom
         table.insert(MySacks.ContextMenu_ItemSubClassMenuList, {
-            text = MySacks.ContextMenu_Separator,
+            text = MySacks.ContextMenu_Separator_Wide,
             notCheckable=true,
             notClickable=true,
         })
@@ -997,7 +957,7 @@ function MySacks.GenerateItemSubClassMenu(itemClassID)
     return MySacks.ContextMenu_ItemClassMenuList
 end
 
-
+--- get the total vendor price of an item sub class
 function MySacks.GetItemSubClassSellTotal(classID, subClassID)
     local total = 0
     for bag = 0, 4 do
@@ -1017,6 +977,7 @@ function MySacks.GetItemSubClassSellTotal(classID, subClassID)
     return total
 end
 
+--- get the total vendor price of an item class
 function MySacks.GetItemClassSellTotal(classID)
     local total = 0
     for bag = 0, 4 do
@@ -1036,7 +997,7 @@ function MySacks.GetItemClassSellTotal(classID)
     return total
 end
 
--- this function will loop through the characters bags and update the global saved variables
+--- this function will loop through the characters bags and update the global saved variables
 function MySacks.ScanBags()
     if MySacks.Loaded == true then
         MYSACKS_GLOBAL.Characters[UnitGUID('player')].Bags = {}
@@ -1061,11 +1022,12 @@ function MySacks.ScanBags()
                             Icon = tonumber(itemIcon),
                             Count = tonumber(slotCount),
                             ExpansionID = tonumber(expacID),
-                            SellPrice = tonumber(SellPrice),
+                            VendorPrice = tonumber(itemSellPrice),
                             BagID = tonumber(bag),
                             SlotID = tonumber(slot),
                             EffectiveLevel = tonumber(effectiveILvl),
                         }
+                        --print(string.format('added: %s %s %s to bags db', itemName, bag, slot))
                     else
                         MYSACKS_GLOBAL.Characters[UnitGUID('player')].Bags[id].Count = tonumber(MYSACKS_GLOBAL.Characters[UnitGUID('player')].Bags[id].Count + slotCount)
                     end
@@ -1077,6 +1039,7 @@ function MySacks.ScanBags()
     end
 end
 
+--- scan player bank and bank bags and update the saved var table
 function MySacks.ScanBanks()
     if MySacks.Loaded == true then
         MYSACKS_GLOBAL.Characters[UnitGUID('player')].Bank = {}
@@ -1100,7 +1063,7 @@ function MySacks.ScanBanks()
                         Icon = tonumber(itemIcon),
                         Count = tonumber(slotCount),
                         ExpansionID = tonumber(expacID),
-                        SellPrice = tonumber(SellPrice),
+                        SellPrice = tonumber(itemSellPrice),
                         BagID = tonumber(bag),
                         SlotID = tonumber(slot),
                         EffectiveLevel = tonumber(effectiveILvl),
@@ -1131,7 +1094,7 @@ function MySacks.ScanBanks()
                             Icon = tonumber(itemIcon),
                             Count = tonumber(slotCount),
                             ExpansionID = tonumber(expacID),
-                            SellPrice = tonumber(SellPrice),
+                            SellPrice = tonumber(itemSellPrice),
                             BagID = tonumber(bag),
                             SlotID = tonumber(slot),
                             EffectiveLevel = tonumber(effectiveILvl),
@@ -1147,44 +1110,7 @@ function MySacks.ScanBanks()
     end
 end
 
-function MySacks.ScanReagentsBank()
-    if MySacks.Loaded == true then
-        MYSACKS_GLOBAL.Characters[UnitGUID('player')].Reagents = {}
-        for slot = 1, 98 do
-            local link = GetContainerItemLink(-3, slot)
-            local id = select(10, GetContainerItemInfo(-3, slot))
-            local slotCount = select(2, GetContainerItemInfo(-3, slot))
-            if link and id and slotCount then
-                id = tonumber(id)
-                local effectiveILvl, isPreview, baseILvl = GetDetailedItemLevelInfo(link)
-                local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemIcon, itemSellPrice, itemClassID, itemSubClassID, bindType, expacID, itemSetID, isCraftingReagent = GetItemInfo(link)
-                if not MYSACKS_GLOBAL.Characters[UnitGUID('player')].Reagents[id] then
-                    MYSACKS_GLOBAL.Characters[UnitGUID('player')].Reagents[id] = {
-                        Name = tostring(itemName),
-                        Link = itemLink,
-                        Rarity = tonumber(itemRarity),
-                        MinLevel = tonumber(itemMinLevel),
-                        Level = tonumber(itemLevel),
-                        ClassID = tonumber(itemClassID),
-                        SubClassID = tonumber(itemSubClassID),
-                        Icon = tonumber(itemIcon),
-                        Count = tonumber(slotCount),
-                        ExpansionID = tonumber(expacID),
-                        SellPrice = tonumber(SellPrice),
-                        BagID = tonumber(bag),
-                        SlotID = tonumber(slot),
-                        EffectiveLevel = tonumber(effectiveILvl),
-                    }
-                else
-                    MYSACKS_GLOBAL.Characters[UnitGUID('player')].Reagents[id].Count = tonumber(MYSACKS_GLOBAL.Characters[UnitGUID('player')].Reagents[id].Count + slotCount)
-                end
-            end
-        end
-    else
-        MySacks.Print(MySacks.ErrorCodes['initfail'])
-    end
-end
-
+--- deletes a character from the saved var table or resets the character if its the currently logged in character
 function MySacks.DeleteCharacter(guid, name)
     local characterName, class, filename, classID = '', nil, nil, nil
     if not MySacks.PlayerMixin then
@@ -1247,6 +1173,7 @@ function MySacks.DeleteCharacter(guid, name)
     end
 end
 
+--- scan player bags and generate a report table and map tables for class/subClass/junk items
 function MySacks.GetBagsReport()
     MySacks.CurrentBagReport = {}
     MySacks.PlayerBagSlotsMap_ItemClass = {}
@@ -1257,10 +1184,12 @@ function MySacks.GetBagsReport()
             local link = GetContainerItemLink(bag, slot)
             local slotCount = select(2, GetContainerItemInfo(bag, slot))
             if link then
+                local itemID = select(1, GetItemInfoInstant(link))
                 local classID = select(12, GetItemInfo(link))
                 local subClassID = select(13, GetItemInfo(link))
                 local sellPrice = select(11, GetItemInfo(link))
                 local rarity = select(3, GetItemInfo(link))
+                local name = select(1, GetItemInfo(link))
                 local icon = select(10, GetItemInfo(link))
                 if rarity == 0 then
                     table.insert(MySacks.PlayerBagSlotsMap_JunkRarity, {
@@ -1295,16 +1224,19 @@ function MySacks.GetBagsReport()
                     if not MySacks.CurrentBagReport[tonumber(classID)][tonumber(subClassID)][link] then
                         local ignore = false
                         -- grab ignore value if it exists in saved variables
-                        if MYSACKS_CHARACTER.Merchant.IgnoreList[link] then
-                            ignore = MYSACKS_CHARACTER.Merchant.IgnoreList[link]
+                        if MYSACKS_CHARACTER.Merchant.IgnoreList[itemID] then
+                            ignore = MYSACKS_CHARACTER.Merchant.IgnoreList[itemID]
                         end
                         MySacks.CurrentBagReport[tonumber(classID)][tonumber(subClassID)][link] = { 
                             Rarity = tonumber(rarity), 
                             Count = tonumber(slotCount), 
-                            SellPrice = (tonumber(sellPrice) * tonumber(slotCount)),
+                            VendorPrice = (tonumber(sellPrice)),
+                            --SellPrice = (tonumber(sellPrice) * tonumber(slotCount)),
                             ItemClassID = tonumber(classID),
                             ItemSubClassID = tonumber(subClassID),
                             Link = link,
+                            Name = name,
+                            ItemID = itemID,
                             Ignore = ignore,
                             Icon = tonumber(icon),
                             LocationMap = {
@@ -1313,7 +1245,7 @@ function MySacks.GetBagsReport()
                         }
                     else
                         MySacks.CurrentBagReport[tonumber(classID)][tonumber(subClassID)][link].Count = MySacks.CurrentBagReport[tonumber(classID)][tonumber(subClassID)][link].Count + tonumber(slotCount)
-                        MySacks.CurrentBagReport[tonumber(classID)][tonumber(subClassID)][link].SellPrice = tonumber(MySacks.CurrentBagReport[tonumber(classID)][tonumber(subClassID)][link].SellPrice + (tonumber(sellPrice) * tonumber(slotCount)))
+                        --MySacks.CurrentBagReport[tonumber(classID)][tonumber(subClassID)][link].SellPrice = tonumber(MySacks.CurrentBagReport[tonumber(classID)][tonumber(subClassID)][link].SellPrice + (tonumber(sellPrice) * tonumber(slotCount)))
                         table.insert(MySacks.CurrentBagReport[tonumber(classID)][tonumber(subClassID)][link].LocationMap, { BagID = tonumber(bag), SlotID = tonumber(slot) })
                     end
                 end
@@ -1322,17 +1254,20 @@ function MySacks.GetBagsReport()
     end
 end
 
---- sell item using its bag and slot address
+--- sells an item using a bag/slot values
 function MySacks.VendorItemByLocation(ignoreRules, bagID, slotID)
     local link = select(7, GetContainerItemInfo(tonumber(bagID), tonumber(slotID)))
     local sell = true
     if link then
+        local itemID = select(1, GetItemInfoInstant(link))
         local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemIcon, itemSellPrice, itemClassID, itemSubClassID, bindType, expacID, itemSetID, isCraftingReagent = GetItemInfo(link)
         local effectiveILvl, isPreview, baseILvl = GetDetailedItemLevelInfo(link)
         -- check item wasn't marked for ignore in menu list
-        if MySacks.CurrentBagReport[tonumber(itemClassID)][tonumber(itemSubClassID)][link] then
-            if MySacks.CurrentBagReport[tonumber(itemClassID)][tonumber(itemSubClassID)][link].Ignore == true then
+        if MYSACKS_CHARACTER.Merchant.IgnoreList[itemID] then
+            print('id exists', MYSACKS_CHARACTER.Merchant.IgnoreList[itemID])
+            if MYSACKS_CHARACTER.Merchant.IgnoreList[itemID] == true then
                 sell = false
+                --print(string.format('item %s will not be sold as its on ignore list', itemLink))
             end
         end
         -- check if item is weapon > misc (profession tools etc) or weapon > fishing pole
@@ -1340,6 +1275,7 @@ function MySacks.VendorItemByLocation(ignoreRules, bagID, slotID)
             if tonumber(itemSubClassID) == 14 or tonumber(itemSubClassID) == 20 then
                 -- set this before ignore override to avoid vendoring of tools and fishing poles
                 sell = false
+                --print(string.format('item %s will not be sold as its a misc/prof weapon/pole', itemLink))
             end
         end
         if ignoreRules == true and sell == true then
@@ -1350,19 +1286,23 @@ function MySacks.VendorItemByLocation(ignoreRules, bagID, slotID)
             -- check item level
             if tonumber(effectiveILvl) >= tonumber(MYSACKS_CHARACTER['Merchant'].ItemlevelThreshold) then
                 sell = false
+                --print(string.format('item %s will not be sold as its ilvl is higher than threshold', itemLink))
             end
             -- check item rarity
             if MYSACKS_CHARACTER['Merchant'].VendorRules['rarity'][tonumber(itemRarity)] == true then
                 sell = false
+                --print(string.format('item %s will not be sold as its rarity is isnt to be sold', itemLink))
             end
             -- check armor type
             if tonumber(itemClassID) == 4 and MYSACKS_CHARACTER['Merchant'].VendorRules['armor'][tonumber(itemSubClassID)] == true then
                 sell = false
+                --print(string.format('item %s will not be sold as its armor type isnt to be sold', itemLink))
             end
             -- check boe
             if MYSACKS_CHARACTER['Merchant'].VendorRules['boe'] == true then
                 if tonumber(bindType) == 2 then
                     sell = false
+                    --print(string.format('item %s will not be sold as its bind type isnt to be sold', itemLink))
                 end
             end
             if sell == true then
@@ -1377,19 +1317,22 @@ function MySacks.VendorItemByLocation(ignoreRules, bagID, slotID)
     end
 end
 
-
+--- sells an item using an item link, this will loop all bags and slots and vendor all items with matching link
 function MySacks.SellItemByLink(itemLink, sellPrice, ignoreRules)
     local sell = true
     for bag = 0, 4 do
         for slot = 1, GetContainerNumSlots(bag) do
             local slotLink = GetContainerItemLink(bag, slot)
+            local itemID = select(1, GetItemInfoInstant(itemLink))
             if tostring(slotLink) == tostring(itemLink) then
                 local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemIcon, itemSellPrice, itemClassID, itemSubClassID, bindType, expacID, itemSetID, isCraftingReagent = GetItemInfo(slotLink)
                 local effectiveILvl, isPreview, baseILvl = GetDetailedItemLevelInfo(slotLink)
                 -- check item wasn't marked for ignore in menu list
-                if MySacks.CurrentBagReport[tonumber(itemClassID)][tonumber(itemSubClassID)][slotLink] then
-                    if MySacks.CurrentBagReport[tonumber(itemClassID)][tonumber(itemSubClassID)][slotLink].Ignore == true then
+                if MYSACKS_CHARACTER.Merchant.IgnoreList[itemID] then
+                    print('id exists', MYSACKS_CHARACTER.Merchant.IgnoreList[itemID])
+                    if MYSACKS_CHARACTER.Merchant.IgnoreList[itemID] == true then
                         sell = false
+                        print(string.format('item %s will not be sold as its on ignore list', itemLink))
                     end
                 end
                 -- check if item is weapon > misc (prof tools etc) or weapon > fishing pole
@@ -1397,6 +1340,7 @@ function MySacks.SellItemByLink(itemLink, sellPrice, ignoreRules)
                     if tonumber(itemSubClassID) == 14 or tonumber(itemSubClassID) == 20 then
                         -- set this before ignore override to avoid vendoring of tools and fishing poles
                         sell = false
+                        print(string.format('item %s will not be sold as its a misc/prof weapon/pole', itemLink))
                     end
                 end
                 if sell == true and ignoreRules == true then
@@ -1406,19 +1350,23 @@ function MySacks.SellItemByLink(itemLink, sellPrice, ignoreRules)
                     -- check item level
                     if tonumber(effectiveILvl) >= tonumber(MYSACKS_CHARACTER['Merchant'].ItemlevelThreshold) then
                         sell = false
+                        print(string.format('item %s will not be sold as its ilvl is higher than threshold', itemLink))
                     end
                     -- check item rarity
                     if MYSACKS_CHARACTER['Merchant'].VendorRules['rarity'][tonumber(itemRarity)] == true then
                         sell = false
+                        print(string.format('item %s will not be sold as its rarity is isnt to be sold', itemLink))
                     end
                     -- check armor type
                     if tonumber(itemClassID) == 4 and MYSACKS_CHARACTER['Merchant'].VendorRules['armor'][tonumber(itemSubClassID)] == true then
                         sell = false
+                        print(string.format('item %s will not be sold as its armor type isnt to be sold', itemLink))
                     end
                     -- check boe
                     if MYSACKS_CHARACTER['Merchant'].VendorRules['boe'] == true then
                         if tonumber(bindType) == 2 then
                             sell = false
+                            print(string.format('item %s will not be sold as its bind type isnt to be sold', itemLink))
                         end
                     end
                     if sell == true then
@@ -1426,16 +1374,20 @@ function MySacks.SellItemByLink(itemLink, sellPrice, ignoreRules)
                         MySacks.Print(tostring('sold '..itemLink..' for '..GetCoinTextureString(itemSellPrice)))
                     end
                 end
-                if sell == true then
-                    UseContainerItem(bag, slot)
-                    MySacks.Print(string.format('sold %s for %s ', itemLink, GetCoinTextureString(itemSellPrice)))
+                if StaticPopup1Button1:IsVisible() then
+                    StaticPopup1Button1:Click()
                 end
+                -- if sell == true then
+                --     UseContainerItem(bag, slot)
+                --     MySacks.Print(string.format('sold %s for %s ', itemLink, GetCoinTextureString(itemSellPrice)))
+                -- end
                 sell = true
             end
         end
     end
 end
 
+--- update auto vendor junk rule
 function MySacks.ToggleAutoVendorJunk()
     if not MYSACKS_CHARACTER['Merchant'] then
         MYSACKS_CHARACTER['Merchant'] = {}
@@ -1444,6 +1396,7 @@ function MySacks.ToggleAutoVendorJunk()
     MySacks.Print('auto vendor junk rule: '..tostring(MYSACKS_CHARACTER['Merchant'].AutoVendorJunk))
 end
 
+--- update auto vendor rule
 function MySacks.SetVendorRule(rule, subRule)
     if not MYSACKS_CHARACTER['Merchant'] then
         MYSACKS_CHARACTER['Merchant'] = {}
@@ -1458,6 +1411,7 @@ function MySacks.SetVendorRule(rule, subRule)
     end       
 end
 
+--- wipe all global data
 function MySacks.WipeGlobalSavedVariables()
     for guid, character in pairs(MYSACKS_GLOBAL.Characters) do
         character.Bags = {}
@@ -1466,6 +1420,381 @@ function MySacks.WipeGlobalSavedVariables()
     end
 end
 
+--- setup the report frame
+function MySacks:SetupReportFrame()
+
+    --136831 tabs texture
+
+    self.ReportFrame:SetScript('OnShow', function(self)
+        -- self.GoldText:SetText(GetCoinTextureString(MySacks.CurrentSession['gold']))
+        -- self.ItemsLootedGoldText:SetText(GetCoinTextureString(MySacks.CurrentSession['lootedItemsValue']))
+    end)
+
+    self.CurrentSession = {
+        ['gold'] = 0,
+        ['lootedItems'] = {},
+        ['lootedItemsValue'] = 0,
+    }
+    self.LootedItemsTreeviewTable = {}
+    
+    local vendorMenuText = self.ReportFrame:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    vendorMenuText:SetPoint('TOP', 0, -16)
+    vendorMenuText:SetText('My Sacks Report')
+
+    local closeButton = CreateFrame('BUTTON', 'MySacksReportFrameCloseButton', self.ReportFrame, "UIPanelButtonTemplate")
+    closeButton:SetPoint('TOPRIGHT', -10, -10)
+    closeButton:SetSize(24, 22)
+    closeButton:SetNormalTexture(130832)
+    closeButton:GetNormalTexture():SetTexCoord(0.1, 0.9, 0.1, 0.85)
+    closeButton:SetHighlightTexture(130831)
+    closeButton:GetHighlightTexture(130831):SetTexCoord(0.1, 0.9, 0.1, 0.85)
+    closeButton:SetScript('OnClick', function(self)
+        self:GetParent():Hide()
+    end)
+
+    local goldText = self.ReportFrame:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    goldText:SetPoint('TOPLEFT', 16, -48)
+    goldText:SetText('Gold looted')
+
+    self.ReportFrame.GoldText = self.ReportFrame:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    self.ReportFrame.GoldText:SetPoint('LEFT', goldText, 'RIGHT', 10, 0)
+    self.ReportFrame.GoldText:SetTextColor(1,1,1,1)
+    self.ReportFrame.GoldText:SetText(GetCoinTextureString(MySacks.CurrentSession['gold']))
+
+    local itemsGoldText = self.ReportFrame:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    itemsGoldText:SetPoint('TOPLEFT', goldText, 'BOTTOMLEFT', 0, -4)
+    itemsGoldText:SetText('Items looted vendor value')
+
+    self.ReportFrame.ItemsLootedGoldText = self.ReportFrame:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    self.ReportFrame.ItemsLootedGoldText:SetPoint('LEFT', itemsGoldText, 'RIGHT', 10, 0)
+    self.ReportFrame.ItemsLootedGoldText:SetTextColor(1,1,1,1)
+    self.ReportFrame.ItemsLootedGoldText:SetText(GetCoinTextureString(MySacks.CurrentSession['lootedItemsValue']))
+
+    local resetSessionButton = CreateFrame('BUTTON', 'MySacksReportFrameResetSessionButton', self.ReportFrame, "UIPanelButtonTemplate")
+    resetSessionButton:SetPoint('TOPRIGHT', -16, -48)
+    resetSessionButton:SetText('Reset Session')
+    resetSessionButton:SetSize(100, 22)
+    resetSessionButton:SetScript('OnClick', function(self)
+        MySacks.CurrentSession['gold'] = 0
+        MySacks.CurrentSession['lootedItems'] = {}
+        MySacks.CurrentSession['lootedItemsValue'] = 0
+        self:GetParent().GoldText:SetText(GetCoinTextureString(MySacks.CurrentSession['gold']))
+        self:GetParent().ItemsLootedGoldText:SetText(GetCoinTextureString(MySacks.CurrentSession['lootedItemsValue']))
+        print('MySacks: '..FONT_COLOUR..'your current session has been reset')
+    end)
+
+    local currentSessionTreeviewContainer = CreateFrame('FRAME', 'MySacksReportFrameTreeviewContainer', self.ReportFrame)
+    currentSessionTreeviewContainer:SetPoint('TOPLEFT', self.ReportFrame, 'TOPLEFT', 16, -130)
+    currentSessionTreeviewContainer:SetPoint('TOPRIGHT', self.ReportFrame, 'TOPRIGHT', -36, -130)
+    currentSessionTreeviewContainer:SetHeight(300)
+
+    currentSessionTreeviewContainer.itemsHeader = currentSessionTreeviewContainer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    currentSessionTreeviewContainer.itemsHeader:SetPoint('BOTTOMLEFT', currentSessionTreeviewContainer, 'TOPLEFT', 4, 2)
+    currentSessionTreeviewContainer.itemsHeader:SetText(LOCALES['items'])
+    currentSessionTreeviewContainer.itemsHeader:SetWidth(300)
+    currentSessionTreeviewContainer.itemsHeader:SetJustifyH('LEFT')
+    currentSessionTreeviewContainer.itemsCountHeader = currentSessionTreeviewContainer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    currentSessionTreeviewContainer.itemsCountHeader:SetPoint('LEFT', currentSessionTreeviewContainer.itemsHeader, 'RIGHT', 20, 0)
+    currentSessionTreeviewContainer.itemsCountHeader:SetText(LOCALES['count'])
+    currentSessionTreeviewContainer.itemsCountHeader:SetWidth(75)
+    currentSessionTreeviewContainer.itemsCountHeader:SetJustifyH('LEFT')
+    currentSessionTreeviewContainer.itemsVendorPriceHeader = currentSessionTreeviewContainer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+    currentSessionTreeviewContainer.itemsVendorPriceHeader:SetPoint('LEFT', currentSessionTreeviewContainer.itemsCountHeader, 'RIGHT', 4, 0)
+    currentSessionTreeviewContainer.itemsVendorPriceHeader:SetText(LOCALES['vendorPrice'])
+    currentSessionTreeviewContainer.itemsVendorPriceHeader:SetJustifyH('LEFT')
+
+    self.ReportFrame.CurrentSessionTreeviewRows = {}
+    for i = 1, 20 do
+        local f = CreateFrame('FRAME', 'MySacksReportFrameCurrentSessionTreeviewRow'..i, currentSessionTreeviewContainer)
+        f:SetPoint('TOPLEFT', 0, (i - 1) * -15)
+        f:SetPoint('TOPRIGHT', 0, i * -15)
+        f:SetHeight(14)
+        f.background = f:CreateTexture(nil, 'BACKGROUND')
+        f.background:SetAllPoints(f)
+        f.background:SetColorTexture(0.3,0.3,0.3,0.2)
+        f.data = {}
+
+        f.expandButton = CreateFrame('BUTTON', 'MySacksReportFrameCurrentSessionTreeviewRow'..i..'ExpandButton', f)
+        f.expandButton:SetPoint('LEFT', 4, 0)
+        f.expandButton:SetSize(12, 12)
+        f.expandButton:SetNormalTexture(130838)
+        f.expandButton:SetPushedTexture(130836)
+        f.expandButton.state = false
+        f.expandButton:SetScript('OnClick', function(self)
+            if self:GetParent().data then
+                self:GetParent().data.Expand = not self:GetParent().data.Expand
+                self:SetNormalTexture(self:GetParent().data.Expand and 130821 or 130838)
+                self:SetPushedTexture(self:GetParent().data.Expand and 130820 or 130836)
+                MySacks:HideCurrentSessionTreeviewRows()
+                for k, v in ipairs(MySacks.CurrentSession['lootedItems']) do
+                    if v.ClassID == self:GetParent().data.ClassID then
+                        v.Visible = self:GetParent().data.Expand
+                    end
+                    if v.Parent == true then
+                        v.Visible = true
+                    end
+                end      
+                local c = 0
+                for k, v in ipairs(MySacks.CurrentSession['lootedItems']) do
+                    if v.Visible == true then
+                        c = c + 1
+                    end
+                end
+                if c <= 20 then
+                    MySacks.ReportFrame.CurrentSessionTreeviewScrollBar:SetMinMaxValues(1, 1)
+                else
+                    MySacks.ReportFrame.CurrentSessionTreeviewScrollBar:SetMinMaxValues(1, c - 19)
+                end        
+                MySacks:RefreshCurrentSessionTreeviewRows()
+                C_Timer.After(0.05, function() MySacks:RefreshCurrentSessionTreeviewRows() end)
+            end
+        end)
+
+        f.itemName = f:CreateFontString(nil, 'OVERLAY', 'GameFontNormalSmall')
+        f.itemName:SetPoint('LEFT', 16, 0)
+        f.itemName:SetWidth(300)
+        f.itemName:SetText('test item name'..i)
+        f.itemName:SetJustifyH('LEFT')
+        f.itemCount = f:CreateFontString(nil, 'OVERLAY', 'GameFontNormalSmall')
+        f.itemCount:SetPoint('LEFT', f.itemName, 'RIGHT', 4, 0)
+        f.itemCount:SetWidth(70)
+        f.itemCount:SetTextColor(1,1,1,1)
+        f.itemCount:SetJustifyH('LEFT')
+        f.itemVendorPrice = f:CreateFontString(nil, 'OVERLAY', 'GameFontNormalSmall')
+        f.itemVendorPrice:SetPoint('LEFT', f.itemCount, 'RIGHT', 4, 0)
+        f.itemVendorPrice:SetWidth(140)
+        f.itemVendorPrice:SetTextColor(1,1,1,1)
+        f.itemVendorPrice:SetJustifyH('LEFT')
+
+        -- f.deleteButton = CreateFrame('BUTTON', 'MySacksReportFrameCurrentSessionTreeviewRow'..i..'DeleteButton', f)
+        -- f.deleteButton:SetPoint('LEFT', f.itemVendorPrice, 'RIGHT', 0, 0)
+        -- f.deleteButton:SetSize(16, 16)
+        -- --f.deleteButton:SetNormalTexture(130775) -- red no smoking style icon
+        -- f.deleteButton:SetNormalTexture(130952)
+        -- f.deleteButton:SetPushedTexture(130951)
+        -- f.deleteButton:SetScript('OnClick', function(self)
+        --     print('clcik')
+        --     MySacks.ContextMenu = {
+        --         {
+        --             text = 'Options',
+        --             isTitle = true,
+        --             notCheckable = true,
+        --         },
+        --         {
+        --             text = self:GetParent().data.itemName,
+        --             isTitle = true,
+        --             notCheckable = true,
+        --         },
+        --     }
+        --     EasyMenu(MySacks.ContextMenu, MySacks.ContextMenu_MerchantDropDown, f.deleteButton, 0, 10)
+        -- end)
+        
+        f:SetScript('OnShow', function(self)
+            if self.data then
+                self.expandButton:SetNormalTexture(self.data.Expand and 130821 or 130838)
+                self.expandButton:SetPushedTexture(self.data.Expand and 130820 or 130836)
+                if self.data.Parent == true then
+                    self.expandButton:Show()
+                    self.deleteButton:Hide()
+                    self.itemName:SetText(self.data.DisplayText)
+                    self.itemName:SetTextColor(NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, 1)
+                    self.itemVendorPrice:SetText(GetCoinTextureString(MySacks:GetCurrentSessionClassVendorPriceTotal(self.data.ClassID), 10))
+                else
+                    self.deleteButton:Show()
+                    self.itemName:SetText('  '..self.data.Link)
+                    self.itemName:SetTextColor(1,1,1,1)
+                    self.itemCount:SetText(self.data.Count)
+                    self.itemVendorPrice:SetText(GetCoinTextureString(self.data.VendorPrice, 10))
+                end
+            end        
+        end)
+        f:SetScript('OnHide', function(self)
+            self.expandButton:Hide()
+            self.itemName:SetText(' ')
+            self.itemCount:SetText(' ')
+            self.itemVendorPrice:SetText(' ')
+        end)
+        f:Hide()
+        self.ReportFrame.CurrentSessionTreeviewRows[i] = f
+    end
+
+    self.ReportFrame.CurrentSessionTreeviewScrollBar = CreateFrame('SLIDER', 'MySacksReportFrameCurrentSessionTreeviewRowScrollBar', currentSessionTreeviewContainer, "UIPanelScrollBarTemplate")
+    self.ReportFrame.CurrentSessionTreeviewScrollBar:SetPoint('TOPLEFT', currentSessionTreeviewContainer, 'TOPRIGHT', 28, -17)
+    self.ReportFrame.CurrentSessionTreeviewScrollBar:SetPoint('BOTTOMRIGHT', currentSessionTreeviewContainer, 'BOTTOMRIGHT', 0, 16)
+    self.ReportFrame.CurrentSessionTreeviewScrollBar:EnableMouse(true)
+    self.ReportFrame.CurrentSessionTreeviewScrollBar:SetValueStep(0.1)
+    self.ReportFrame.CurrentSessionTreeviewScrollBar:SetValue(1)
+    self.ReportFrame.CurrentSessionTreeviewScrollBar:SetScript('OnValueChanged', function(self)
+        MySacks:RefreshCurrentSessionTreeviewRows()
+    end)
+
+    self.ReportFrame:Hide()
+end
+
+function MySacks:RefreshCurrentSessionTreeviewRows()
+    MySacks:HideCurrentSessionTreeviewRows()
+    local scrollPos = math.floor(self.ReportFrame.CurrentSessionTreeviewScrollBar:GetValue()) - 1.0
+    local row = 1
+    for i = 1, 20 do
+        if self.CurrentSession['lootedItems'][i + scrollPos] and self.CurrentSession['lootedItems'][i + scrollPos].Visible == true then
+            --print(string.format('table obj[%s, %s] exists and is set to visible, binding to row [%s]', (i + scrollPos), self.CurrentSession['lootedItems'][i + scrollPos].DisplayText, row))
+            MySacks.ReportFrame.CurrentSessionTreeviewRows[row].data = self.CurrentSession['lootedItems'][i + scrollPos]
+            if self.CurrentSession['lootedItems'][i + scrollPos].Parent == true then
+                MySacks.ReportFrame.CurrentSessionTreeviewRows[row].background:SetColorTexture(0.2,0.2,0.0,0.3)
+            else
+                MySacks.ReportFrame.CurrentSessionTreeviewRows[row].background:SetColorTexture(0.3,0.3,0.3,0.2)
+            end
+            MySacks.ReportFrame.CurrentSessionTreeviewRows[row]:Show()
+            row = row + 1
+        else
+            -- something
+            --print(string.format('skipping table obj[%s]', (i + scrollPos)))
+        end
+    end
+end
+
+function MySacks:HideCurrentSessionTreeviewRows()
+    for i = 1, 20 do
+        self.ReportFrame.CurrentSessionTreeviewRows[i]:Hide()
+    end
+end
+
+
+function MySacks:GetCurrentSessionClassVendorPriceTotal(classID)
+    local gold = 0.0
+    for k, info in ipairs(self.CurrentSession['lootedItems']) do
+        if info.ClassID == classID then
+            gold = gold + info.VendorPrice
+        end
+    end
+    return tonumber(gold)
+end
+
+
+function MySacks:CurrentSessionParseLootedItemInfo(...)
+    local msg = select(1, ...)
+    local i, t, lootCount = 1, {}, 1
+    for d in msg:gmatch('%S+') do
+        t[i] = d
+        i = i + 1
+    end
+    local s = t[i-1]:find('|h|rx')
+    local e = t[i-1]:len() - 1
+    if s then
+        lootCount = t[i-1]:sub(s + 5, e)
+    end
+    if msg:find('You receive') then
+        local itemID = MySacks.GetItemIdFromString(msg)
+        if itemID then
+            local itemName, itemLink, itemRarity, _, _, _, _, _, _, itemIcon, itemSellPrice, itemClassID, itemSubClassID, bindType, _, _, _ = GetItemInfo(itemID)
+            if itemSellPrice and itemClassID and itemSubClassID then
+                if not MySacks.CurrentSessionLootedClassIDs[itemClassID] then
+                    MySacks.CurrentSessionLootedClassIDs[itemClassID] = true
+                    table.insert(self.CurrentSession['lootedItems'], {
+                        DisplayText = GetItemClassInfo(tonumber(itemClassID)),
+                        Link = false,
+                        ItemID = false,
+                        Rarity = itemRarity,
+                        ClassID = itemClassID,
+                        SubClassID = -1.0,
+                        Count = 0,
+                        VendorPrice = 0.0,
+                        Parent = true,
+                        Expand = false,
+                        Visible = true,
+                    })
+                end
+                local exists = false
+                for k, v in ipairs(self.CurrentSession['lootedItems']) do
+                    if v.ItemID == itemID then
+                        exists = true
+                        v.Count = v.Count + lootCount
+                        v.VendorPrice = v.VendorPrice + (itemSellPrice * lootCount)
+                    end
+                end
+                if exists == false then
+                    table.insert(self.CurrentSession['lootedItems'], {
+                        DisplayText = itemName,
+                        Link = itemLink,
+                        ItemID = itemID,
+                        Rarity = itemRarity,
+                        ClassID = itemClassID,
+                        SubClassID = itemSubClassID,
+                        Count = lootCount,
+                        VendorPrice = itemSellPrice * (lootCount or 1),
+                        Parent = false,
+                        Expand = false,
+                        Visible = false,
+                    })
+                    --print(string.format('added %s with classID %s to current session loot table', itemLink, itemClassID))
+                end
+                table.sort(self.CurrentSession['lootedItems'], function(a, b)
+                    if a.ClassID == b.ClassID then
+                        if a.SubClassID == b.SubClassID then
+                            --return a.DisplayText < b.DisplayText
+                            return a.VendorPrice > b.VendorPrice
+                        else
+                            return a.SubClassID < b.SubClassID
+                        end
+                    else
+                        return a.ClassID < b.ClassID
+                    end
+                end)
+                local c = 0
+                for k, v in ipairs(self.CurrentSession['lootedItems']) do
+                    if v.Parent == true then
+                        c = c + 1
+                    end
+                end
+                if c <= 20 then
+                    self.ReportFrame.CurrentSessionTreeviewScrollBar:SetMinMaxValues(1, 1)
+                else
+                    self.ReportFrame.CurrentSessionTreeviewScrollBar:SetMinMaxValues(1, c - 19)
+                end
+                --self:RefreshCurrentSessionTreeviewRows()
+                self.CurrentSession['lootedItemsValue'] = self.CurrentSession['lootedItemsValue'] + (itemSellPrice * lootCount)
+                self.ReportFrame.ItemsLootedGoldText:SetText(GetCoinTextureString(MySacks.CurrentSession['lootedItemsValue']))
+            end
+        end
+        self:RefreshCurrentSessionTreeviewRows()
+    end
+end
+
+function MySacks:GetLootedGoldValue(msg)
+    msg = msg:gsub('Copper.', 'Copper')
+    msg = msg:gsub('Silver,', 'Silver')
+    msg = msg:gsub('Gold,', 'Gold')
+    local t = {}
+    for d in msg:gmatch('%S+') do
+        table.insert(t, d)
+    end
+    local gold = { 
+        ['Gold'] = 0,
+        ['Silver'] = 0,
+        --['Copper.'] = 0,
+        ['Copper'] = 0
+    }
+    for k, v in ipairs(t) do
+        if gold[v] then
+            if v == 'Gold' then
+                --print('gold', t[k-1])
+                gold[v] = t[k-1] * 10000
+            elseif v == 'Silver' then
+                --print('silver', t[k-1])
+                gold[v] = t[k-1] * 100
+            else
+                --print('copper', t[k-1])
+                gold[v] = t[k-1]
+            end
+        end
+    end
+    local g = gold['Gold'] + gold['Silver'] + gold['Copper']
+    if g then
+        return tonumber(g)
+    else
+        return false
+    end
+end
 
 ----------------------------------------------------------------------------------------------------
 -- init
@@ -1527,25 +1856,37 @@ function MySacks.Init()
         -- hook all bags ?
         ContainerFrame1:HookScript("OnShow", MySacks.ScanBags)
 
-        BankFrameTab2:HookScript("OnMouseUp", MySacks.ScanReagentsBank)
-
-        --move this?
-        local merchantButton = CreateFrame('BUTTON', 'MySacksMerchantFramePortraitButton', MerchantFrame)
-        merchantButton:SetPoint('TOPLEFT', 0, 0)
-        merchantButton:SetPoint('BOTTOMRIGHT', MerchantFrame, 'TOPLEFT', 45, -45)
-        merchantButton:RegisterForClicks('RightButtonUp')
-        merchantButton:SetScript('OnClick', function(self, button)
-            if button == 'RightButton' and not IsControlKeyDown() then
+        local vendorMenuDropdown = CreateFrame('FRAME', "MySacksMerchantFrameVendorMenuDropdown", MerchantFrameLootFilter, "UIDropDownMenuTemplate")
+        vendorMenuDropdown:SetPoint('RIGHT', MerchantFrameLootFilter, 'LEFT', 25, 0)
+        UIDropDownMenu_SetWidth(vendorMenuDropdown, 80)
+        UIDropDownMenu_SetText(vendorMenuDropdown, 'MySacks')
+        _G['MySacksMerchantFrameVendorMenuDropdownButton']:SetScript('OnClick', function(self)
+            if not IsControlKeyDown() then
                 MySacks.GenerateMerchantButtonContextMenu()
-                EasyMenu(MySacks.ContextMenu, MySacks.ContextMenu_MerchantDropDown, "cursor", 0 , 0, "MENU")
+                EasyMenu(MySacks.ContextMenu, MySacks.ContextMenu_MerchantDropDown, vendorMenuDropdown, 10 , 10) --, "MENU")
                 if MYSACKS_CHARACTER['Merchant'].AutoVendorJunk == true then
                     MySacks.SellJunk()
                 end
-            elseif button == 'RightButton' and IsControlKeyDown() then
+            elseif IsControlKeyDown() then
                 MySacks.GenerateMerchantButtonContextMenu()
-                EasyMenu(MySacks.ContextMenu, MySacks.ContextMenu_MerchantDropDown, "cursor", 0 , 0, "MENU")
+                EasyMenu(MySacks.ContextMenu, MySacks.ContextMenu_MerchantDropDown, vendorMenuDropdown, 10 , 10) --, "MENU")
             end
         end)
+
+        MySacks.ReportFrame = CreateFrame('FRAME', 'MySacksReportFrame', UIParent, BackdropTemplateMixin and "BackdropTemplate")
+        MySacks.MakeFrameMovable(MySacks.ReportFrame)
+        MySacks.ReportFrame:SetPoint('CENTER', 0, 0)
+        MySacks.ReportFrame:SetSize(600, 450)
+        MySacks.ReportFrame:SetBackdrop({
+            edgeFile = "interface/dialogframe/ui-dialogbox-border",
+            edgeSize = 32,
+            bgFile = "interface/dialogframe/ui-dialogbox-background-dark",
+            tile = true,
+            tileEdge = false,
+            tileSize = 200,
+            insets = { left = 4, right = 4, top = 4, bottom = 4 }
+        })
+        MySacks:SetupReportFrame()
 
         local mailButton = CreateFrame('BUTTON', 'MySacksMerchantFramePortraitButton', SendMailFrame)
         mailButton:SetPoint('TOPLEFT', SendMailSendMoneyButtonText, 'TOPRIGHT', 12, -2)
@@ -1554,15 +1895,8 @@ function MySacks.Init()
             MySacks.GenerateMailButtonContextMenu()
             EasyMenu(MySacks.ContextMenu, MySacks.ContextMenu_MerchantDropDown, "cursor", 0 , 0, "MENU")
         end)
-        --dropdown
-        -- mailButton:SetNormalTexture(130955)
-        -- mailButton:SetPushedTexture(130954)
-        --red +
         mailButton:SetNormalTexture(130838)
         mailButton:SetPushedTexture(130836)
-        --green +
-        -- mailButton:SetNormalTexture(130743)
-        -- mailButton:SetPushedTexture(130741)
 
         MySacks.VendoringCooldown = CreateFrame('FRAME', 'MySacksVendoringCooldown', UIParent)
         MySacks.VendoringCooldown:SetSize(50, 50)
@@ -1591,26 +1925,43 @@ MySacks.EventFrame:RegisterEvent('PLAYER_LOGOUT')
 MySacks.EventFrame:RegisterEvent('MERCHANT_SHOW')
 MySacks.EventFrame:RegisterEvent('MERCHANT_CLOSED')
 MySacks.EventFrame:RegisterEvent('BANKFRAME_OPENED')
+MySacks.EventFrame:RegisterEvent('CHAT_MSG_MONEY')
+MySacks.EventFrame:RegisterEvent('CHAT_MSG_LOOT')
 MySacks.EventFrame:SetScript("OnEvent", function(self, event, ...)
-    MySacks.Events[event](MySacks, ...)
+    MySacks[event](MySacks, ...)
 end)
 
-MySacks.Events = {
-    ['ADDON_LOADED'] = function(self, ...)
-        if select(1, ...):lower() == "mysacks" then
-            C_Timer.After(2, MySacks.Init) --delay this to help ensure guid is ready
+
+function MySacks:ADDON_LOADED(...)
+    if select(1, ...):lower() == "mysacks" then
+        C_Timer.After(2, MySacks.Init)
+    end
+end
+
+function MySacks:MERCHANT_SHOW(...)
+    MySacks.ScanBags()
+end
+
+function MySacks:MERCHANT_CLOSED(...)
+    CloseDropDownMenus()
+end
+
+function MySacks:BANKFRAME_OPENED(...)
+    MySacks.ScanBanks()
+end
+
+function MySacks:CHAT_MSG_MONEY(...)
+    local msg = select(1, ...)
+    if msg:find('You') then
+        local gold = self:GetLootedGoldValue(msg)
+        if gold then
+            self.CurrentSession['gold'] = self.CurrentSession['gold'] + gold
+            self.ReportFrame.GoldText:SetText(GetCoinTextureString(MySacks.CurrentSession['gold']))
         end
-    end,
-    ['MERCHANT_SHOW'] = function(self, ...)
-        MySacks.ScanBags()
-    end,
-    ['PLAYER_LOGOUT'] = function(self, ...)
-        MySacks.ScanBags()
-    end,
-    ['MERCHANT_CLOSED'] = function(self, ...)
-        CloseDropDownMenus()
-    end,
-    ['BANKFRAME_OPENED'] = function(self, ...)
-        MySacks.ScanBanks()
-    end,
-}
+    end
+end
+
+
+function MySacks:CHAT_MSG_LOOT(...)
+    self:CurrentSessionParseLootedItemInfo(...)
+end
