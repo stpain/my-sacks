@@ -258,7 +258,25 @@ end
 
 
 
-
+function MySacks.SellJunk()
+    MySacks.VendoringCooldown:Show()
+    MySacks.VendoringCooldown.cooldown:SetCooldown(GetTime(), (#MySacks.PlayerBagSlotsMap_JunkRarity * MySacks.BAG_SLOT_DELAY))
+    local i = 1
+    copper = 0
+    C_Timer.NewTicker(MySacks.BAG_SLOT_DELAY, function()
+        local location = MySacks.PlayerBagSlotsMap_JunkRarity[i]
+        if location then
+            --print(string.format('selling bag %s slot %s', location.BagID, location.SlotID))
+            local c = MySacks.VendorItemByLocation(true, location.BagID, location.SlotID)
+            copper = copper + c
+            i = i + 1
+        end
+        if i > #MySacks.PlayerBagSlotsMap_JunkRarity then
+            MySacks.VendoringCooldown:Hide()
+            MySacks.Print('sold junk for '..GetCoinTextureString(copper))
+        end
+    end, #MySacks.PlayerBagSlotsMap_JunkRarity)
+end
 
 
 
@@ -1595,12 +1613,12 @@ function MySacks:SetupReportFrame()
                 self.expandButton:SetPushedTexture(self.data.Expand and 130820 or 130836)
                 if self.data.Parent == true then
                     self.expandButton:Show()
-                    self.deleteButton:Hide()
+                    --self.deleteButton:Hide()
                     self.itemName:SetText(self.data.DisplayText)
                     self.itemName:SetTextColor(NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, 1)
                     self.itemVendorPrice:SetText(GetCoinTextureString(MySacks:GetCurrentSessionClassVendorPriceTotal(self.data.ClassID), 10))
                 else
-                    self.deleteButton:Show()
+                    --self.deleteButton:Show()
                     self.itemName:SetText('  '..self.data.Link)
                     self.itemName:SetTextColor(1,1,1,1)
                     self.itemCount:SetText(self.data.Count)
